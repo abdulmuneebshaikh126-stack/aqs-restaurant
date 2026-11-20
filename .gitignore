@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+build/
+.env
+.env.local
+.DS_Store
+*.pem
+npm-debug.log*
+📦 PART 2: Types, Lib, Hooks
+ChatGPT ko bolein: "Ye files bhi restaurant-app/ folder mein rakho"

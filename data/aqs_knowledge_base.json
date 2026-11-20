@@ -1,0 +1,433 @@
+{
+  "info": {
+    "id": "main",
+    "name": "AQS Restaurant",
+    "tagline": "Good Food • Good Mood",
+    "description": "Where culinary passion meets sophisticated taste. Crafting memorable dining experiences with the finest ingredients. Indulge in our curated symphony of extraordinary flavors fusing culinary artistry with modern dining excellence.",
+    "address": "123 Luxury Avenue, Gourmet District",
+    "phone": "+92 300 1234567",
+    "email": "contact@aqsrestaurant.com",
+    "delivery_fee": 5,
+    "delivery_time": "Hot and fresh dishes delivered directly to your doorstep in 30 minutes.",
+    "payment_methods": "Cash on Delivery (COD)",
+    "order_tracking": "Live kitchen tracking active through our Orders page (/orders) with four real-time milestones: Pending, Preparing, Ready, and Delivered.",
+    "reservation_info": "Interactive table and chair reservation with visual seating floor plan across 4 dining zones (Window Terrace, Main Dining, VIP Lounge, Chef Garden). Free online booking with instant confirmation pass.",
+    "updated_at": "2026-11-19T12:29:32.231Z"
+  },
+  "openingHours": [
+    {
+      "id": 1,
+      "day_range": "Monday – Thursday",
+      "open_time": "11:00 AM",
+      "close_time": "11:00 PM",
+      "notes": "Lunch & Dinner Service"
+    },
+    {
+      "id": 2,
+      "day_range": "Friday – Saturday",
+      "open_time": "11:00 AM",
+      "close_time": "12:00 AM",
+      "notes": "Midnight Fine Dining & Drinks"
+    },
+    {
+      "id": 3,
+      "day_range": "Sunday",
+      "open_time": "12:00 PM",
+      "close_time": "10:00 PM",
+      "notes": "Sunday Brunch & Dinner"
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat-steaks",
+      "name": "Steaks & Grills",
+      "description": "Flame-seared prime beef cuts, slow-smoked ribs, and fresh seafood"
+    },
+    {
+      "id": "cat-pizza",
+      "name": "Pizza",
+      "description": "Wood-fired artisan sourdough pizzas baked with gourmet Italian toppings"
+    },
+    {
+      "id": "cat-burgers",
+      "name": "Burgers",
+      "description": "Prime Wagyu beef and crispy panko chicken on toasted brioche"
+    },
+    {
+      "id": "cat-pasta",
+      "name": "Pasta",
+      "description": "Handcrafted fresh egg pasta ribbons in rich parmesan cream sauces"
+    },
+    {
+      "id": "cat-desserts",
+      "name": "Desserts",
+      "description": "Decadent Valrhona chocolate cakes, glazed New York cheesecakes"
+    },
+    {
+      "id": "cat-drinks",
+      "name": "Drinks",
+      "description": "Crafted botanical sparklers, passionfruit mojitos, and gold-flake elixirs"
+    }
+  ],
+  "menuItems": [
+    {
+      "id": "1",
+      "name": "Artisan Truffle & Wild Mushroom Pizza",
+      "category": "Pizza",
+      "description": "Wood-fired sourdough crust, fior di latte, black truffle shavings, porcini mushrooms, fresh thyme",
+      "price": 18.5,
+      "discount_price": 15.99,
+      "is_available": true,
+      "is_featured": true,
+      "image_url": "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&q=80",
+      "keywords": "pizza, truffle, mushroom, wild mushroom, sourdough, cheese, italian, vegetarian, sale, special"
+    },
+    {
+      "id": "2",
+      "name": "Prime Wagyu Brioche Burger",
+      "category": "Burgers",
+      "description": "Double Wagyu beef smashed patties, smoked gouda, caramelized shallot relish, truffle aioli on toasted brioche",
+      "price": 16.99,
+      "discount_price": null,
+      "is_available": true,
+      "is_featured": true,
+      "image_url": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80",
+      "keywords": "burger, wagyu, beef, prime burger, brioche, patties, gouda, truffle aioli, cheeseburger"
+    },
+    {
+      "id": "3",
+      "name": "Handcrafted Truffle Fettuccine Alfredo",
+      "category": "Pasta",
+      "description": "House-made egg pasta ribbons tossed in aged Parmigiano Reggiano, brown butter, garlic cream & herbs",
+      "price": 17,
+      "discount_price": null,
+      "is_available": true,
+      "is_featured": false,
+      "image_url": "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800&q=80",
+      "keywords": "pasta, fettuccine, alfredo, truffle fettuccine, cream, parmigiano, egg pasta, italian"
+    },
+    {
+      "id": "4",
+      "name": "Flame-Seared Prime Ribeye Steak",
+      "category": "Steaks & Grills",
+      "description": "Flame-grilled 10oz prime ribeye, bone marrow herb butter, roasted garlic head, red wine demi-glace",
+      "price": 34,
+      "discount_price": 29.5,
+      "is_available": true,
+      "is_featured": true,
+      "image_url": "https://images.unsplash.com/photo-1600891964599-f61ba0e24092?w=800&q=80",
+      "keywords": "steak, ribeye, prime ribeye, beef steak, beef, meat, grill, flame seared, bone marrow, special, sale"
+    },
+    {
+      "id": "5",
+      "name": "Slow-Smoked Sticky Glazed Ribs",
+      "category": "Steaks & Grills",
+      "description": "12-hour hickory smoked tender ribs coated in signature spiced bourbon BBQ glaze and toasted sesame",
+      "price": 24.5,
+      "discount_price": null,
+      "is_available": true,
+      "is_featured": false,
+      "image_url": "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&q=80",
+      "keywords": "ribs, smoked ribs, bbq ribs, sticky ribs, pork ribs, meat, grill, glazed ribs"
+    },
+    {
+      "id": "6",
+      "name": "Burrata & Heirloom Caesar Salad",
+      "category": "Pasta",
+      "description": "Crisp baby gem lettuce, creamy Puglia burrata, sourdough croutons, shaved parmigiano, garlic anchovy emulsion",
+      "price": 13.5,
+      "discount_price": 11.99,
+      "is_available": true,
+      "is_featured": false,
+      "image_url": "https://images.unsplash.com/photo-1546793665-c74683f339c1?w=800&q=80",
+      "keywords": "salad, caesar salad, burrata, cheese, heirloom, greens, appetizer, light, healthy, special"
+    },
+    {
+      "id": "7",
+      "name": "Pan-Seared Wild Atlantic Salmon",
+      "category": "Steaks & Grills",
+      "description": "Crispy skin salmon filet served over saffron asparagus risotto and zesty lemon caper emulsion",
+      "price": 22,
+      "discount_price": null,
+      "is_available": true,
+      "is_featured": true,
+      "image_url": "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&q=80",
+      "keywords": "salmon, fish, seafood, atlantic salmon, pan seared, risotto, healthy, grill"
+    },
+    {
+      "id": "8",
+      "name": "Crispy Chicken Katsu Supreme",
+      "category": "Burgers",
+      "description": "Panko-crusted chicken tenderloin, honey sriracha glaze, pickled purple cabbage slaw on buttered sesame bun",
+      "price": 14.5,
+      "discount_price": null,
+      "is_available": true,
+      "is_featured": false,
+      "image_url": "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=800&q=80",
+      "keywords": "chicken, chicken burger, katsu, crispy chicken, panko, sriracha, sandwich, poultry"
+    },
+    {
+      "id": "9",
+      "name": "Molten Valrhona Lava Cake",
+      "category": "Desserts",
+      "description": "Warm decadent dark chocolate cake with flowing molten core, Madagascar bourbon vanilla bean gelato",
+      "price": 9.5,
+      "discount_price": null,
+      "is_available": true,
+      "is_featured": true,
+      "image_url": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&q=80",
+      "keywords": "dessert, cake, chocolate cake, molten lava, lava cake, valrhona, sweet, gelato, ice cream"
+    },
+    {
+      "id": "10",
+      "name": "Vanilla Berry Glazed Cheesecake",
+      "category": "Desserts",
+      "description": "Velvety New York style cheesecake layered over buttery graham crust, topped with wild forest berry coulis",
+      "price": 8.99,
+      "discount_price": 7.5,
+      "is_available": true,
+      "is_featured": false,
+      "image_url": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&q=80",
+      "keywords": "dessert, cheesecake, berry cheesecake, new york cheesecake, sweet, berries, strawberry, special"
+    },
+    {
+      "id": "11",
+      "name": "Golden Passionfruit & Mint Mojito",
+      "category": "Drinks",
+      "description": "Crushed passionfruit, fresh garden spearmint, cane sugar, sparkling water and edible gold flake shimmer",
+      "price": 6.5,
+      "discount_price": null,
+      "is_available": true,
+      "is_featured": false,
+      "image_url": "https://images.unsplash.com/photo-1536935338788-846bb9981813?w=800&q=80",
+      "keywords": "drink, beverage, mojito, passionfruit, mocktail, cocktail, mint, refreshment, cold, gold shimmer"
+    },
+    {
+      "id": "12",
+      "name": "Slow-Braised Birria Tacos",
+      "category": "Steaks & Grills",
+      "description": "Crisped corn tortillas filled with braised shredded beef, melted Oaxaca cheese, cilantro, rich dipping consommé",
+      "price": 14,
+      "discount_price": 12,
+      "is_available": true,
+      "is_featured": true,
+      "image_url": "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800&q=80",
+      "keywords": "tacos, birria, birria tacos, beef tacos, mexican, consomme, shredded beef, special, sale"
+    }
+  ],
+  "tables": [
+    {
+      "id": "tbl-1",
+      "number": 1,
+      "name": "Sunset Romantic Alcove",
+      "zone": "Window Terrace",
+      "capacity": 2,
+      "shape": "circle",
+      "price_tier": "premium",
+      "features": [
+        "Panoramic City Lights",
+        "Candlelit Setting",
+        "Intimate 2-Seater"
+      ]
+    },
+    {
+      "id": "tbl-2",
+      "number": 2,
+      "name": "Skyline Window Table",
+      "zone": "Window Terrace",
+      "capacity": 2,
+      "shape": "circle",
+      "price_tier": "premium",
+      "features": [
+        "Floor-to-ceiling Window",
+        "Evening Sunset View",
+        "Cozy Ambiance"
+      ]
+    },
+    {
+      "id": "tbl-3",
+      "number": 3,
+      "name": "Terrace Grand Window",
+      "zone": "Window Terrace",
+      "capacity": 4,
+      "shape": "rectangle",
+      "price_tier": "premium",
+      "features": [
+        "Panoramic View",
+        "Spacious Seating",
+        "Direct Terrace Access"
+      ]
+    },
+    {
+      "id": "tbl-4",
+      "number": 4,
+      "name": "Chandelier Center Table",
+      "zone": "Main Dining",
+      "capacity": 4,
+      "shape": "rectangle",
+      "price_tier": "standard",
+      "features": [
+        "Crystal Chandelier View",
+        "Central Atmosphere",
+        "Plush Velvet Chairs"
+      ]
+    },
+    {
+      "id": "tbl-5",
+      "number": 5,
+      "name": "Wine Cellar Vista Table",
+      "zone": "Main Dining",
+      "capacity": 4,
+      "shape": "rectangle",
+      "price_tier": "standard",
+      "features": [
+        "Vintage Wine Cellar View",
+        "Warm Acoustic Lighting",
+        "Spacious Distance"
+      ]
+    },
+    {
+      "id": "tbl-6",
+      "number": 6,
+      "name": "Grand Family Dining",
+      "zone": "Main Dining",
+      "capacity": 6,
+      "shape": "rectangle",
+      "price_tier": "standard",
+      "features": [
+        "Comfortable 6-Chair Setup",
+        "Spacious Tabletop",
+        "Great for Families"
+      ]
+    },
+    {
+      "id": "tbl-7",
+      "number": 7,
+      "name": "Celebration Grand Table",
+      "zone": "Main Dining",
+      "capacity": 6,
+      "shape": "rectangle",
+      "price_tier": "standard",
+      "features": [
+        "6 Deluxe Chairs",
+        "Celebration Setup",
+        "Central Serving Space"
+      ]
+    },
+    {
+      "id": "tbl-8",
+      "number": 8,
+      "name": "Royal Velvet VIP Booth",
+      "zone": "VIP Lounge",
+      "capacity": 6,
+      "shape": "booth",
+      "price_tier": "vip",
+      "features": [
+        "Private Curved Velvet Booth",
+        "Personal Sommelier Access",
+        "Acoustic Privacy"
+      ]
+    },
+    {
+      "id": "tbl-9",
+      "number": 9,
+      "name": "Presidential 8-Seat Table",
+      "zone": "VIP Lounge",
+      "capacity": 8,
+      "shape": "rectangle",
+      "price_tier": "vip",
+      "features": [
+        "8 Executive Highback Chairs",
+        "Private Butler Service",
+        "Dedicated Lounge Bar"
+      ]
+    },
+    {
+      "id": "tbl-10",
+      "number": 10,
+      "name": "Courtyard Fountain Table",
+      "zone": "Chef's Garden",
+      "capacity": 4,
+      "shape": "circle",
+      "price_tier": "standard",
+      "features": [
+        "Open Sky Garden",
+        "Fountain Murmur",
+        "Fresh Floral Aromas"
+      ]
+    },
+    {
+      "id": "tbl-11",
+      "number": 11,
+      "name": "Olive Tree Patio",
+      "zone": "Chef's Garden",
+      "capacity": 4,
+      "shape": "rectangle",
+      "price_tier": "standard",
+      "features": [
+        "Illuminated Olive Trees",
+        "Breezy Patio",
+        "Relaxed Fine Dining"
+      ]
+    },
+    {
+      "id": "tbl-12",
+      "number": 12,
+      "name": "Garden Banquet Feast Table",
+      "zone": "Chef's Garden",
+      "capacity": 8,
+      "shape": "rectangle",
+      "price_tier": "vip",
+      "features": [
+        "8 Garden Chairs",
+        "Long Wood Dining Slab",
+        "Under Fairy Lights"
+      ]
+    }
+  ],
+  "faqs": [
+    {
+      "id": 1,
+      "topic": "Reservations",
+      "question": "How do I book a table and choose chairs?",
+      "answer": "You can book online on our Reservations page (/reservations). Select your date and arrival time, pick your table on our interactive 2D floor plan, and select your individual chairs. Reservation is free with instant confirmation."
+    },
+    {
+      "id": 2,
+      "topic": "Delivery",
+      "question": "What is your delivery fee and delivery time?",
+      "answer": "We deliver hot and fresh within 30 minutes. Our flat delivery fee is $5.00 for all orders within our gourmet delivery radius."
+    },
+    {
+      "id": 3,
+      "topic": "Payment",
+      "question": "What payment methods do you accept?",
+      "answer": "We accept Cash on Delivery (COD). You can pay our delivery rider in cash upon receiving your hot meal."
+    },
+    {
+      "id": 4,
+      "topic": "Opening Hours",
+      "question": "What are the opening and closing hours of AQS Restaurant?",
+      "answer": "AQS Restaurant is open: Monday – Thursday: 11:00 AM – 11:00 PM | Friday – Saturday: 11:00 AM – 12:00 AM (Midnight) | Sunday: 12:00 PM – 10:00 PM."
+    },
+    {
+      "id": 5,
+      "topic": "Location",
+      "question": "Where is AQS Restaurant located?",
+      "answer": "AQS Restaurant is located at 123 Luxury Avenue, Gourmet District. You can reach our front desk by phone at +92 300 1234567 or by email at contact@aqsrestaurant.com."
+    },
+    {
+      "id": 6,
+      "topic": "Ordering",
+      "question": "How can I order food online?",
+      "answer": "Visit our Menu page (/menu), click \"Add\" on any dish to add it to your cart, and proceed to Checkout (/checkout) with Cash on Delivery."
+    },
+    {
+      "id": 7,
+      "topic": "Chairs & Seating",
+      "question": "How many chairs are available per table?",
+      "answer": "We have tables ranging from intimate 2-chair romantic tables up to 8-chair presidential banquet tables across 4 zones: Window Terrace, Main Dining, VIP Lounge, and Chef Garden."
+    }
+  ],
+  "lastUpdated": "2026-11-20T06:15:48.914Z"
+}
