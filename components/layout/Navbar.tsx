@@ -32,10 +32,10 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
         <Link href="/" className="flex items-center gap-3 group">
           <div className="relative h-12 w-12 overflow-hidden rounded-full border border-primary/40 shadow-md transition group-hover:scale-105 group-hover:border-primary">
-            <Image src="/images/logo.jpg" alt="APNA-DERA Restaurant Logo" fill sizes="48px" className="object-cover" priority />
+            <Image src="/images/logo.jpg" alt="APNA DERA Restaurant Logo" fill sizes="48px" className="object-cover" priority />
           </div>
           <div className="flex flex-col">
-            <span className="font-serif text-xl sm:text-2xl font-bold tracking-wider gold-gradient-text">APNA-DERA</span>
+            <span className="font-serif text-xl sm:text-2xl font-bold tracking-wider gold-gradient-text">APNA DERA</span>
             <span className="text-[10px] uppercase tracking-[0.25em] text-[#C5A059] font-medium -mt-1">Restaurant</span>
           </div>
         </Link>
@@ -100,6 +100,7 @@ export default function Navbar() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden border-t border-primary/20 bg-[var(--secondary)] md:hidden"
           >
             <nav className="flex flex-col gap-2 px-4 py-4">

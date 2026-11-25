@@ -25,7 +25,7 @@ export default function FoodCard({ item }: { item: MenuItem }) {
     addItem(item)
     setAdded(true)
     toast.success(`${item.name} added to cart!`, {
-      description: `$${price.toFixed(2)} • Ready in cart`,
+      description: `Rs. {price.toFixed(2)} • Ready in cart`,
     })
     setTimeout(() => setAdded(false), 1500)
   }
@@ -83,11 +83,11 @@ export default function FoodCard({ item }: { item: MenuItem }) {
           <div>
             <div className="flex items-baseline gap-2">
               <span className="text-xl font-bold gold-gradient-text tracking-tight">
-                ${price.toFixed(2)}
+                Rs. {price.toFixed(2)}
               </span>
               {item.discount_price && (
                 <span className="text-xs text-[var(--foreground)] opacity-50 line-through">
-                  ${item.price.toFixed(2)}
+                  Rs. {item.price.toFixed(2)}
                 </span>
               )}
             </div>
@@ -104,7 +104,7 @@ export default function FoodCard({ item }: { item: MenuItem }) {
                 ? 'cursor-not-allowed border border-[var(--foreground)]/10 bg-[var(--background)] text-[var(--foreground)] opacity-50'
                 : added
                 ? 'scale-95 bg-emerald-500 text-white'
-                : 'gold-gradient-bg text-black hover:scale-105 hover:opacity-90'
+                : 'gold-gradient-bg text-black hover:scale-105 active:scale-95 hover:opacity-90'
             }`}
             aria-label={`Add ${item.name} to cart`}
           >

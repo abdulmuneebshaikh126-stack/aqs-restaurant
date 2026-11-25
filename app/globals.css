@@ -122,3 +122,8 @@ h1, h2, h3, h4, .font-restaurant {
     transition-duration: 0.01ms !important;
   }
 }
+
+:root {
+  --font-serif: 'Playfair Display Variable', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans Variable', system-ui, sans-serif;
+}

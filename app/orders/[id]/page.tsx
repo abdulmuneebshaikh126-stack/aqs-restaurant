@@ -6,11 +6,12 @@ import { Order, OrderStatus } from '@/types'
 import { useOrderTrackingQuery } from '@/hooks/queries/useOrdersQuery'
 import { Loader2, XCircle, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
+import { PageEntrance } from '@/components/motion/MotionPrimitives'
 
 const TRACKING_STEPS: OrderStatus[] = ['pending', 'confirmed', 'preparing', 'ready', 'delivered']
 
 export default function OrderTrackingPage({ params }: { params: { id: string } }) {
-  const { data: initialOrder, isLoading } = useOrderTrackingQuery(params.id)
+  const { data: initialOrder, isLoading, error: orderError } = useOrderTrackingQuery(params.id)
   const [order, setOrder] = useState<Order | null>(null)
   const [live, setLive] = useState(false)
   const supabase = createClient()
@@ -55,6 +56,20 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
     )
   }
 
+  if (orderError) {
+    return (
+      <div className="mx-auto max-w-lg p-20 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-red-500 border border-red-500/30">
+          <AlertTriangle className="h-7 w-7" />
+        </div>
+        <h2 className="font-serif text-2xl font-bold text-[var(--foreground)]">Access Restricted</h2>
+        <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+          {(orderError as Error).message || 'Please sign in with the account that placed this order.'}
+        </p>
+      </div>
+    )
+  }
+
   if (!order) {
     return (
       <div className="mx-auto max-w-lg p-20 text-center">
@@ -73,7 +88,7 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
   const idx = TRACKING_STEPS.indexOf(order.status)
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16">
+    <PageEntrance className="mx-auto max-w-2xl px-4 py-16">
       <div className="flex items-center gap-2">
         <span className={`h-2.5 w-2.5 rounded-full ${live ? 'bg-emerald-400 shadow-md shadow-emerald-500/50' : 'bg-yellow-400'}`} />
         <span className="text-xs uppercase tracking-wider text-[var(--muted-foreground)]">
@@ -90,9 +105,9 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
 
       {/* Cancelled Alert Banner */}
       {isCancelled ? (
-        <div className="mt-8 rounded-2xl bg-red-950/40 border border-red-500/40 p-6 text-center">
-          <XCircle className="mx-auto h-12 w-12 text-red-400 mb-2" />
-          <h2 className="font-serif text-xl font-bold text-red-200">Order Cancelled</h2>
+        <div className="mt-8 rounded-2xl bg-red-500/10 border border-red-500/40 p-6 text-center">
+          <XCircle className="mx-auto h-12 w-12 text-red-500 mb-2" />
+          <h2 className="font-serif text-xl font-bold text-red-500">Order Cancelled</h2>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             This order has been cancelled by the kitchen or customer service. If you have questions, please contact APNA-DERA support.
           </p>
@@ -152,9 +167,9 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
 
         <div className="mt-4 flex justify-between border-t border-[var(--border)] pt-4 text-xl font-bold">
           <span className="font-serif text-[var(--foreground)]">Total</span>
-          <span className="gold-gradient-text">${Number(order.total).toFixed(2)}</span>
+          <span className="gold-gradient-text">Rs. {Number(order.total).toFixed(2)}</span>
         </div>
       </div>
-    </div>
+    </PageEntrance>
   )
 }

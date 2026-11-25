@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Search, UtensilsCrossed, ShoppingBag, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { useUserOrdersQuery } from '@/hooks/queries/useOrdersQuery'
+import { PageEntrance } from '@/components/motion/MotionPrimitives'
 
 export default function OrdersIndexPage() {
   const [orderId, setOrderId] = useState('')
@@ -22,7 +23,7 @@ export default function OrdersIndexPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+    <PageEntrance className="mx-auto max-w-2xl px-4 py-20 text-center">
       <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--surface)] border border-primary/30 text-primary">
         <UtensilsCrossed className="h-10 w-10" />
       </div>
@@ -42,7 +43,7 @@ export default function OrdersIndexPage() {
           type="text"
           value={orderId}
           onChange={(e) => setOrderId(e.target.value)}
-          placeholder="e.g. APNA-DERA-... or UUID"
+          placeholder="e.g. APNA DERA-... or UUID"
           required
           className="flex-1 rounded-full bg-[var(--surface)] border border-[var(--border)] px-5 py-3.5 text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none transition text-sm"
         />
@@ -77,7 +78,7 @@ export default function OrdersIndexPage() {
                     #{ord.order_number || ord.id.slice(0, 8)}
                   </span>
                   <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
-                    ${Number(ord.total).toFixed(2)} • Status: <span className="capitalize text-[var(--foreground)] font-medium">{ord.status}</span>
+                    Rs. {Number(ord.total).toFixed(2)} • Status: <span className="capitalize text-[var(--foreground)] font-medium">{ord.status}</span>
                   </p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-[var(--muted-foreground)] group-hover:text-primary transition" />
@@ -93,6 +94,6 @@ export default function OrdersIndexPage() {
           Browse our Menu
         </Link>
       </div>
-    </div>
+    </PageEntrance>
   )
 }

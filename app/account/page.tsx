@@ -27,6 +27,7 @@ import {
   Edit2,
   Check,
 } from 'lucide-react'
+import { PageEntrance } from '@/components/motion/MotionPrimitives'
 
 export default function AccountPage() {
   const router = useRouter()
@@ -146,7 +147,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-16 md:px-8">
+    <PageEntrance className="mx-auto max-w-5xl px-4 py-16 md:px-8">
       {/* User Header Profile Card */}
       <div className="rounded-3xl bg-[var(--surface)] border border-primary/30 p-6 md:p-8 shadow-2xl relative overflow-hidden mb-10">
         <div className="absolute -top-16 -right-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
@@ -285,7 +286,7 @@ export default function AccountPage() {
                       {getOrderStatusBadge(ord.status)}
                     </div>
                     <h3 className="font-serif text-lg font-bold text-[var(--foreground)] mt-1">
-                      ${Number(ord.total).toFixed(2)} • {ord.order_items?.length || 0} item(s)
+                      Rs. {Number(ord.total).toFixed(2)} • {ord.order_items?.length || 0} item(s)
                     </h3>
                     <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
                       Placed on {new Date(ord.created_at).toLocaleString()}
@@ -460,6 +461,6 @@ export default function AccountPage() {
           </form>
         </div>
       )}
-    </div>
+    </PageEntrance>
   )
 }

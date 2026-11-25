@@ -47,13 +47,32 @@ export async function POST(req: NextRequest) {
     if (sanitized.length === 0) {
       return NextResponse.json({
         success: true,
-        reply: 'Hello! How can I help you today with APNA-DERA Restaurant?',
+        reply: 'Hello! How can I help you today with APNA DERA Restaurant?',
         intent: 'GREETING',
       })
     }
 
     // Check if this is an explicit admin sync request
     if (body.action === 'sync' && body.menuItems) {
+      const supabase = await createServerSupabaseClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 })
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (profile?.role !== 'admin') {
+        return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 })
+      }
+
       const syncResult = syncKnowledgeBaseFromAdmin(body.menuItems)
       return NextResponse.json({
         success: true,
@@ -84,7 +103,7 @@ export async function POST(req: NextRequest) {
         success: false,
         error: 'An internal error occurred while processing your request.',
         reply:
-          "Sorry! I don't have this information about APNA-DERA Restaurant right now. Please contact our restaurant for assistance at +92 300 1234567 or contact@apnadera.com.",
+          "Sorry! I don't have this information about APNA DERA Restaurant right now. Please contact our restaurant for assistance at +92 300 1234567 or contact@apnadera.com.",
       },
       { status: 500 }
     )

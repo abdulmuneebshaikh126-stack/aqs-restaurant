@@ -27,7 +27,7 @@ interface Message {
 const DEFAULT_WELCOME_MESSAGE: Message = {
   id: 'welcome-1',
   sender: 'bot',
-  text: 'Welcome to APNA-DERA Restaurant! How can I help you today? ✨\n\nYou can ask me about our menu, dish prices, table & chair reservations, opening hours, or delivery.',
+  text: 'Welcome to APNA DERA Restaurant! How can I help you today? ✨\n\nYou can ask me about our menu, dish prices, table & chair reservations, opening hours, or delivery.',
   timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   suggestedQuestions: [
     'What food do you have?',
@@ -109,7 +109,7 @@ export default function ChatbotWidget() {
       const botReply: Message = {
         id: `bot-${Date.now()}`,
         sender: 'bot',
-        text: data.reply || "Sorry! I don't have this information about APNA-DERA Restaurant right now. Please contact our restaurant for assistance.",
+        text: data.reply || "Sorry! I don't have this information about APNA DERA Restaurant right now. Please contact our restaurant for assistance.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         suggestedQuestions: data.suggestedQuestions,
       }
@@ -120,7 +120,7 @@ export default function ChatbotWidget() {
       const errorReply: Message = {
         id: `bot-err-${Date.now()}`,
         sender: 'bot',
-        text: "Sorry! I don't have this information about APNA-DERA Restaurant right now. Please contact our restaurant for assistance.",
+        text: "Sorry! I don't have this information about APNA DERA Restaurant right now. Please contact our restaurant for assistance.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }
       setMessages((prev) => [...prev, errorReply])
@@ -198,7 +198,7 @@ export default function ChatbotWidget() {
                 <div className="relative h-10 w-10 overflow-hidden rounded-full border border-primary/40 shadow">
                   <Image
                     src="/images/logo.jpg"
-                    alt="APNA-DERA Restaurant"
+                    alt="APNA DERA Restaurant"
                     fill
                     sizes="40px"
                     className="object-cover"
@@ -207,7 +207,7 @@ export default function ChatbotWidget() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-serif text-sm font-bold tracking-wider gold-gradient-text">
-                      APNA-DERA Assistant
+                      APNA DERA Assistant
                     </h3>
                     <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                   </div>
@@ -265,7 +265,7 @@ export default function ChatbotWidget() {
                           <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-primary/30 shadow-sm mb-1">
                             <Image
                               src="/images/logo.jpg"
-                              alt="APNA-DERA Bot"
+                              alt="APNA DERA Bot"
                               fill
                               sizes="28px"
                               className="object-cover"

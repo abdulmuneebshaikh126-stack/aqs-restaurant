@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth/AuthContext'
 import { toast } from 'sonner'
 import { showErrorAlert, showSuccessAlert } from '@/lib/utils/sweetalert'
 import { Loader2, ArrowLeft, Mail, Lock, User, Phone, CheckCircle2 } from 'lucide-react'
+import { PageEntrance } from '@/components/motion/MotionPrimitives'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -139,7 +140,7 @@ export default function LoginPage() {
         await refreshProfile()
 
         toast.success('Account Created Successfully!', {
-          description: `Welcome to APNA-DERA Restaurant, ${fullName}!`,
+          description: `Welcome to APNA DERA Restaurant, ${fullName}!`,
         })
 
         router.push('/account')
@@ -190,12 +191,12 @@ export default function LoginPage() {
         const userRole = data.user?.user_metadata?.role
         if (userRole === 'admin') {
           toast.success('Welcome Back, Administrator!', {
-            description: 'Access granted to APNA-DERA Management Portal.',
+            description: 'Access granted to APNA DERA Management Portal.',
           })
           router.push('/admin')
         } else {
           toast.success('Signed in successfully!', {
-            description: 'Welcome back to APNA-DERA Restaurant.',
+            description: 'Welcome back to APNA DERA Restaurant.',
           })
           router.push('/account')
         }
@@ -208,25 +209,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-20">
+    <PageEntrance className="mx-auto max-w-md px-4 py-20">
       <div className="text-center mb-8">
         <div className="mx-auto mb-4 relative h-20 w-20 overflow-hidden rounded-full border border-primary/40 shadow-xl">
           <Image
             src="/images/logo.jpg"
-            alt="APNA-DERA Restaurant"
+            alt="APNA DERA Restaurant"
             fill
             sizes="80px"
             className="object-cover"
           />
         </div>
         <span className="text-xs uppercase tracking-[0.25em] text-[#C5A059] font-medium">
-          APNA-DERA Restaurant
+          APNA DERA Restaurant
         </span>
         <h1 className="mt-1 font-serif text-3xl font-bold text-[var(--foreground)]">
           {mode === 'login'
             ? 'Welcome Back'
             : mode === 'signup'
-            ? 'Join APNA-DERA Dining'
+            ? 'Join APNA DERA Dining'
             : 'Reset Password'}
         </h1>
         <p className="mt-2 text-sm text-[var(--muted-foreground)]">
@@ -420,6 +421,6 @@ export default function LoginPage() {
           )}
         </div>
       </div>
-    </div>
+    </PageEntrance>
   )
 }

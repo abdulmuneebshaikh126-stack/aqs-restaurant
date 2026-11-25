@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import FoodCard from '@/components/menu/FoodCard'
+import { PageEntrance, StaggerContainer, StaggerItem } from '@/components/motion/MotionPrimitives'
 import { MenuItem } from '@/types'
 import { useMenuItemsQuery, useCategoriesQuery } from '@/hooks/queries/useMenuQuery'
 import { Loader2, Search, X } from 'lucide-react'
@@ -118,7 +119,7 @@ const demoItems: (MenuItem & { categoryName: string })[] = [
 export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
-  const { data: items = demoItems, isLoading } = useMenuItemsQuery(demoItems)
+  const { data: items = demoItems, isLoading, isError, refetch } = useMenuItemsQuery(demoItems)
   const { data: categories = menuCategories } = useCategoriesQuery(menuCategories)
 
   const filteredItems = useMemo(() => {
@@ -142,9 +143,9 @@ export default function MenuPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 md:px-8">
       {/* Header */}
-      <div className="text-center max-w-2xl mx-auto mb-10">
+      <PageEntrance className="text-center max-w-2xl mx-auto mb-10">
         <span className="text-xs uppercase tracking-[0.3em] text-[#C5A059] font-semibold">
-          APNA-DERA Culinary Collection
+          APNA DERA Culinary Collection
         </span>
         <h1 className="mt-2 font-serif text-4xl font-bold text-[var(--foreground)] md:text-5xl">
           Our Menu
@@ -172,7 +173,7 @@ export default function MenuPage() {
             </button>
           )}
         </div>
-      </div>
+      </PageEntrance>
 
       {/* Category Filter Tabs */}
       <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-12">
@@ -194,11 +195,39 @@ export default function MenuPage() {
         })}
       </div>
 
-      {/* Loading Spinner */}
+      {/* Error Banner */}
+      {isError && (
+        <div className="mb-8 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm text-red-500 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <span>Unable to reach live kitchen menu. Showing cached menu items.</span>
+          <button
+            onClick={() => refetch()}
+            className="rounded-full border border-red-500/40 px-4 py-1 text-xs font-semibold hover:bg-red-500/15 transition"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Loading Skeletons */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-[#C5A059]" />
-          <p className="text-sm text-[var(--foreground)]/65">Loading delicacies from APNA-DERA Kitchen...</p>
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="overflow-hidden rounded-2xl border border-primary/20 bg-[var(--secondary)] shadow-lg animate-pulse"
+            >
+              <div className="h-56 w-full bg-[var(--card)]" />
+              <div className="p-5 space-y-3">
+                <div className="h-5 w-3/4 rounded bg-[var(--card)]" />
+                <div className="h-4 w-full rounded bg-[var(--card)]" />
+                <div className="h-4 w-2/3 rounded bg-[var(--card)]" />
+                <div className="pt-3 flex items-center justify-between border-t border-[var(--border)]">
+                  <div className="h-6 w-20 rounded bg-[var(--card)]" />
+                  <div className="h-8 w-20 rounded-full bg-[var(--card)]" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="rounded-2xl bg-[var(--secondary)] border border-[var(--foreground)]/10 p-12 text-center max-w-md mx-auto">
@@ -216,11 +245,13 @@ export default function MenuPage() {
         </div>
       ) : (
         /* Food Cards Grid */
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <StaggerContainer className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {filteredItems.map((item) => (
-            <FoodCard key={item.id} item={item} />
+            <StaggerItem key={item.id}>
+              <FoodCard item={item} />
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
       )}
     </div>
   )

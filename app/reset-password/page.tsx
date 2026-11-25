@@ -66,14 +66,14 @@ export default function ResetPasswordPage() {
         <div className="mx-auto mb-4 relative h-20 w-20 overflow-hidden rounded-full border border-primary/40 shadow-xl">
           <Image
             src="/images/logo.jpg"
-            alt="APNA-DERA Restaurant"
+            alt="APNA DERA Restaurant"
             fill
             sizes="80px"
             className="object-cover"
           />
         </div>
         <span className="text-xs uppercase tracking-[0.25em] text-[#C5A059] font-medium">
-          APNA-DERA Restaurant
+          APNA DERA Restaurant
         </span>
         <h1 className="mt-1 font-serif text-3xl font-bold text-[var(--foreground)]">
           Create New Password

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
+import { PageEntrance, Reveal } from '@/components/motion/MotionPrimitives'
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, subtotal, deliveryFee, total, clearCart } = useCart()
@@ -26,7 +27,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-16">
+    <PageEntrance className="mx-auto max-w-4xl px-4 py-16">
       <div className="mb-8">
         <span className="text-xs uppercase tracking-[0.25em] text-[#C5A059] font-medium">
           Order Review
@@ -54,7 +55,7 @@ export default function CartPage() {
             <div className="flex-1">
               <h3 className="font-serif font-semibold text-[var(--foreground)]">{item.name}</h3>
               <p className="font-bold gold-gradient-text">
-                ${(item.discount_price ?? item.price).toFixed(2)}
+                Rs. {(item.discount_price ?? item.price).toFixed(2)}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -88,15 +89,15 @@ export default function CartPage() {
       <div className="mt-8 rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-lg">
         <div className="flex justify-between border-b border-[var(--border)] pb-3 text-sm text-[var(--muted)]">
           <span>Subtotal</span>
-          <span className="font-medium text-[var(--foreground)]">${subtotal.toFixed(2)}</span>
+          <span className="font-medium text-[var(--foreground)]">Rs. {subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between border-b border-[var(--border)] py-3 text-sm text-[var(--muted)]">
           <span>Delivery Fee</span>
-          <span className="font-medium text-[var(--foreground)]">${deliveryFee.toFixed(2)}</span>
+          <span className="font-medium text-[var(--foreground)]">Rs. {deliveryFee.toFixed(2)}</span>
         </div>
         <div className="flex justify-between pt-4 text-xl font-bold">
           <span className="text-[var(--foreground)] font-serif">Total</span>
-          <span className="gold-gradient-text">${total.toFixed(2)}</span>
+          <span className="gold-gradient-text">Rs. {total.toFixed(2)}</span>
         </div>
         <Link
           href="/checkout"
@@ -111,6 +112,6 @@ export default function CartPage() {
           Clear Cart
         </button>
       </div>
-    </div>
+    </PageEntrance>
   )
 }

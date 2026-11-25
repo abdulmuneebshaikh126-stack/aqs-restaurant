@@ -12,7 +12,15 @@ export const reservationSchema = z.object({
   customer_name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please provide a valid email address'),
   phone: z.string().min(7, 'Valid phone number required'),
-  reservation_date: z.string().min(1, 'Reservation date is required'),
+  reservation_date: z
+    .string()
+    .min(1, 'Reservation date is required')
+    .refine((val) => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const selected = new Date(`${val}T00:00:00`)
+      return !Number.isNaN(selected.getTime()) && selected >= today
+    }, 'Cannot book a reservation for a past date'),
   reservation_time: z.string().min(1, 'Reservation time is required'),
   guests: z.number().min(1, 'At least 1 guest').max(20, 'Maximum 20 guests per table'),
   special_requests: z.string().optional(),

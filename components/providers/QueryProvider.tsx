@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MotionConfig } from 'framer-motion'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/lib/auth/AuthContext'
 
@@ -21,23 +22,25 @@ export default function QueryProvider({ children }: { children: React.ReactNode 
   )
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        {children}
-        <Toaster
-          theme="dark"
-          position="top-right"
-          richColors
-          closeButton
-          toastOptions={{
-            style: {
-              background: '#141418',
-              borderColor: 'rgba(197, 160, 89, 0.3)',
-              color: '#F5F5F7',
-            },
-          }}
-        />
-      </AuthProvider>
-    </QueryClientProvider>
+    <MotionConfig reducedMotion="user">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          {children}
+          <Toaster
+            theme="dark"
+            position="top-right"
+            richColors
+            closeButton
+            toastOptions={{
+              style: {
+                background: '#141418',
+                borderColor: 'rgba(197, 160, 89, 0.3)',
+                color: '#F5F5F7',
+              },
+            }}
+          />
+        </AuthProvider>
+      </QueryClientProvider>
+    </MotionConfig>
   )
 }

@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth/AuthContext'
 import { useCreateOrderMutation } from '@/hooks/queries/useOrdersQuery'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { PageEntrance } from '@/components/motion/MotionPrimitives'
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -98,7 +99,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-16">
+    <PageEntrance className="mx-auto max-w-3xl px-4 py-16">
       <div className="mb-8">
         <span className="text-xs uppercase tracking-[0.25em] text-[#C5A059] font-medium">
           Finalize Order
@@ -182,15 +183,15 @@ export default function CheckoutPage() {
         <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 space-y-3">
           <div className="flex justify-between text-sm text-[var(--muted)]">
             <span>Subtotal</span>
-            <span className="font-medium text-[var(--foreground)]">${subtotal.toFixed(2)}</span>
+            <span className="font-medium text-[var(--foreground)]">Rs. {subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-sm text-[var(--muted)]">
             <span>Delivery</span>
-            <span className="font-medium text-[var(--foreground)]">${deliveryFee.toFixed(2)}</span>
+            <span className="font-medium text-[var(--foreground)]">Rs. {deliveryFee.toFixed(2)}</span>
           </div>
           <div className="flex justify-between border-t border-[var(--border)] pt-3 text-xl font-bold">
             <span className="font-serif text-[var(--foreground)]">Total</span>
-            <span className="gold-gradient-text">${total.toFixed(2)}</span>
+            <span className="gold-gradient-text">Rs. {total.toFixed(2)}</span>
           </div>
         </div>
 
@@ -209,6 +210,6 @@ export default function CheckoutPage() {
           )}
         </button>
       </form>
-    </div>
+    </PageEntrance>
   )
 }

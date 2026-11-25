@@ -24,6 +24,7 @@ import { RestaurantTable } from '@/types'
 import TableFloorPlan, { RESTAURANT_TABLES } from '@/components/reservations/TableFloorPlan'
 import { useCreateReservationMutation } from '@/hooks/queries/useReservationsQuery'
 import { toast } from 'sonner'
+import { PageEntrance } from '@/components/motion/MotionPrimitives'
 
 const TIME_SLOTS = [
   '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM',
@@ -136,11 +137,11 @@ export default function ReservationsPage() {
       })
     } catch (e: any) {
       console.warn('Supabase booking notice:', e?.message)
-      if (e?.message && e.message.includes('already booked')) {
-        toast.error('Booking Conflict', { description: e.message })
-        setLoading(false)
-        return
-      }
+      toast.error('Reservation Failed', {
+        description: e?.message || 'Unable to complete reservation. Please try again.',
+      })
+      setLoading(false)
+      return
     }
 
     // 2. Persist in localStorage for instant Admin Panel viewing
@@ -189,7 +190,7 @@ export default function ReservationsPage() {
             Table Reserved for {successData.customer_name}
           </h1>
           <p className="mt-3 text-sm md:text-base text-[var(--muted-foreground)] max-w-md mx-auto">
-            Your table and individual chairs have been secured at APNA-DERA Restaurant. An SMS confirmation will be delivered to <span className="text-[var(--foreground)] font-medium">{successData.phone}</span>.
+            Your table and individual chairs have been secured at APNA DERA Restaurant. An SMS confirmation will be delivered to <span className="text-[var(--foreground)] font-medium">{successData.phone}</span>.
           </p>
 
           {/* Luxury Table & Seating Pass */}
@@ -197,7 +198,7 @@ export default function ReservationsPage() {
             <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
               <div>
                 <span className="text-[10px] uppercase tracking-widest text-[#C5A059] font-bold">
-                  APNA-DERA Dining Pass
+                  APNA DERA Dining Pass
                 </span>
                 <h3 className="font-serif text-xl font-bold text-[var(--foreground)] mt-0.5">
                   Table {successData.table_number < 10 ? `0${successData.table_number}` : successData.table_number} — {successData.table_name}
@@ -274,7 +275,7 @@ export default function ReservationsPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 md:px-8">
       {/* Page Heading */}
-      <div className="text-center max-w-3xl mx-auto mb-10">
+      <PageEntrance className="text-center max-w-3xl mx-auto mb-10">
         <span className="text-xs uppercase tracking-[0.3em] text-[#C5A059] font-semibold flex items-center justify-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5" /> Luxury Table & Seating Reservation
         </span>
@@ -284,7 +285,7 @@ export default function ReservationsPage() {
         <p className="mt-3 text-sm md:text-base text-[var(--muted-foreground)] leading-relaxed font-light">
           Choose your dining date, select your table and exact chairs directly on our interactive floor plan, and secure your dining experience in seconds.
         </p>
-      </div>
+      </PageEntrance>
 
       {/* Animated Step Progress Indicator */}
       <div className="mx-auto max-w-3xl mb-12">

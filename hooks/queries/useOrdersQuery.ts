@@ -56,23 +56,26 @@ export function useUserOrdersQuery(userId?: string | null) {
 }
 
 export function useOrderTrackingQuery(orderId: string) {
-  const supabase = createClient()
-
   return useQuery({
     queryKey: orderTrackingKey(orderId),
     queryFn: async () => {
-      // 1. Check Supabase by id or order_number
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*, order_items(*)')
-        .or(`id.eq.${orderId},order_number.eq.${orderId}`)
-        .maybeSingle()
-
-      if (!error && data) {
-        return data as Order
+      // 1. Check secure server API route
+      try {
+        const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data?.order) return data.order as Order
+        } else if (res.status === 403) {
+          const errData = await res.json().catch(() => ({}))
+          throw new Error(errData.error || 'Access denied for this order.')
+        }
+      } catch (err: any) {
+        if (err?.message?.includes('sign in') || err?.message?.includes('Access denied')) {
+          throw err
+        }
       }
 
-      // 2. Check localStorage fallback
+      // 2. Check localStorage fallback (for offline/local orders)
       try {
         const stored = localStorage.getItem('aqs_orders_data')
         if (stored) {
@@ -87,6 +90,7 @@ export function useOrderTrackingQuery(orderId: string) {
       return null
     },
     enabled: Boolean(orderId),
+    retry: false,
     staleTime: 1000 * 15,
   })
 }

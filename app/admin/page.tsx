@@ -264,8 +264,8 @@ type AdminTab = 'dashboard' | 'orders' | 'reservations' | 'menu' | 'customers' |
 export default function AdminPage() {
   const { user, profile, isAdmin, loading: authLoading, refreshProfile } = useAuth()
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
-  const [orders, setOrders] = useState<any[]>(DEFAULT_SEED_ORDERS)
-  const [reservations, setReservations] = useState<any[]>(DEFAULT_SEED_RESERVATIONS)
+  const [orders, setOrders] = useState<any[]>([])
+  const [reservations, setReservations] = useState<any[]>([])
   const [menuItems, setMenuItems] = useState<any[]>(DEFAULT_MENU_ITEMS)
   const [profiles, setProfiles] = useState<UserProfile[]>([])
   const [profilesLoading, setProfilesLoading] = useState(false)
@@ -302,24 +302,7 @@ export default function AdminPage() {
       if (p && p.length > 0) {
         setProfiles(p)
       } else {
-        setProfiles([
-          {
-            id: user?.id || 'admin-1',
-            full_name: profile?.full_name || 'Admin Muneeb',
-            phone: profile?.phone || '+92 300 1234567',
-            email: user?.email || 'abdulmuneebshaikh126@gmail.com',
-            role: 'admin',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 'cust-1',
-            full_name: 'Sophia Montgomery',
-            phone: '+92 301 9876543',
-            email: 'sophia@example.com',
-            role: 'customer',
-            created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-          },
-        ])
+        setProfiles([])
       }
     } catch {
     } finally {
@@ -586,20 +569,6 @@ export default function AdminPage() {
     }
   }
 
-  // Grant admin to current user if owner
-  const handleClaimAdmin = async () => {
-    if (!user) return
-    try {
-      await updateUserRole(user.id, 'admin')
-      await refreshProfile()
-      toast.success('Admin Privileges Granted!', {
-        description: 'You now have full administrator access.',
-      })
-    } catch (e: any) {
-      toast.error('Could not grant admin', { description: e.message })
-    }
-  }
-
   // Calculate Key KPI Metrics
   const totalRevenue = orders
     .filter((o) => o.status !== 'cancelled')
@@ -642,7 +611,7 @@ export default function AdminPage() {
           </div>
           <h2 className="font-serif text-2xl font-bold text-[var(--foreground)]">Administrator Portal</h2>
           <p className="text-sm text-[var(--muted-foreground)]">
-            Access to APNA-DERA operations, live kitchen dispatch, and catalog management requires an authenticated administrator session.
+            Access to APNA DERA operations, live kitchen dispatch, and catalog management requires an authenticated administrator session.
           </p>
           <Link
             href="/login"
@@ -658,8 +627,7 @@ export default function AdminPage() {
     )
   }
 
-  const isOwner = user?.email === 'abdulmuneebshaikh126@gmail.com'
-  const isPermitted = isAdmin || isOwner || profile?.role === 'admin'
+  const isPermitted = isAdmin || profile?.role === 'admin'
 
   if (!isPermitted) {
     return (
@@ -673,12 +641,6 @@ export default function AdminPage() {
             Your signed-in account (<span className="text-[#C5A059] font-medium">{user.email}</span>) does not have administrator privileges.
           </p>
           <div className="flex flex-col gap-2 pt-2">
-            <button
-              onClick={() => handleClaimAdmin()}
-              className="w-full rounded-full gold-gradient-bg py-3 text-xs uppercase tracking-wider font-bold text-black shadow hover:opacity-90 transition"
-            >
-              Grant Owner Admin Access
-            </button>
             <Link
               href="/"
               className="w-full rounded-full border border-[var(--border)] bg-[var(--card)] py-3 text-xs uppercase tracking-wider font-semibold text-[var(--muted)] hover:text-[var(--foreground)] transition"
@@ -700,7 +662,7 @@ export default function AdminPage() {
             <div className="relative h-11 w-11 overflow-hidden rounded-full border border-primary/40 shadow-lg">
               <Image
                 src="/images/logo.jpg"
-                alt="APNA-DERA Admin"
+                alt="APNA DERA Admin"
                 fill
                 sizes="44px"
                 className="object-cover"
@@ -709,7 +671,7 @@ export default function AdminPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-serif text-xl font-bold tracking-wider gold-gradient-text">
-                  APNA-DERA
+                  APNA DERA
                 </span>
                 <span className="rounded-full bg-primary/20 border border-primary/40 px-2 py-0.5 text-[9px] uppercase tracking-wider font-bold text-amber-300">
                   Manager Portal
@@ -753,6 +715,7 @@ export default function AdminPage() {
             { id: 'orders', label: 'Live Orders', icon: ShoppingBag, badge: activeOrdersCount },
             { id: 'reservations', label: 'Tables & Chairs', icon: CalendarCheck, badge: bookedTablesCount },
             { id: 'menu', label: 'Menu Manager', icon: UtensilsCrossed },
+            { id: 'customers', label: 'Customers', icon: Users },
             { id: 'analytics', label: 'Analytics', icon: BarChart3 },
           ].map((tab) => {
             const isActive = activeTab === tab.id
@@ -801,6 +764,7 @@ export default function AdminPage() {
                 { id: 'orders', label: 'Live Orders', icon: ShoppingBag, badge: activeOrdersCount },
                 { id: 'reservations', label: 'Tables & Chairs', icon: CalendarCheck, badge: bookedTablesCount },
                 { id: 'menu', label: 'Menu Manager', icon: UtensilsCrossed },
+                { id: 'customers', label: 'Customers', icon: Users },
                 { id: 'analytics', label: 'Analytics', icon: BarChart3 },
               ].map((tab) => {
                 const isActive = activeTab === tab.id
@@ -859,7 +823,7 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div className="mt-4 font-serif text-3xl font-bold gold-gradient-text">
-                  ${totalRevenue.toFixed(2)}
+                  Rs. {totalRevenue.toFixed(2)}
                 </div>
                 <p className="mt-1 text-xs text-emerald-400 flex items-center gap-1 font-medium">
                   <TrendingUp className="h-3 w-3" /> +18.4% vs yesterday
@@ -913,7 +877,7 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div className="mt-4 font-serif text-3xl font-bold text-[var(--foreground)]">
-                  ${orders.length > 0 ? (totalRevenue / orders.length).toFixed(2) : '0.00'}
+                  Rs. {orders.length > 0 ? (totalRevenue / orders.length).toFixed(2) : '0.00'}
                 </div>
                 <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                   Across {orders.length} total orders
@@ -956,7 +920,7 @@ export default function AdminPage() {
 
                       <div className="text-right">
                         <span className="font-bold gold-gradient-text text-sm">
-                          ${(ord.total || 0).toFixed(2)}
+                          Rs. {(ord.total || 0).toFixed(2)}
                         </span>
                         <div>
                           <span
@@ -1126,7 +1090,7 @@ export default function AdminPage() {
                           Status: {ord.status}
                         </span>
                         <span className="font-serif text-xl font-bold gold-gradient-text">
-                          ${(ord.total || 0).toFixed(2)}
+                          Rs. {(ord.total || 0).toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -1443,7 +1407,7 @@ export default function AdminPage() {
 
                     <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
                       <span className="font-serif text-lg font-bold gold-gradient-text">
-                        ${dish.price.toFixed(2)}
+                        Rs. {dish.price.toFixed(2)}
                       </span>
 
                       <div className="flex items-center gap-2">
@@ -1527,7 +1491,7 @@ export default function AdminPage() {
 
                         <div>
                           <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
-                            Price ($)
+                            Price (Rs.)
                           </label>
                           <input
                             type="number"
@@ -1654,7 +1618,7 @@ export default function AdminPage() {
 
                         <div>
                           <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
-                            Price ($)
+                            Price (Rs.)
                           </label>
                           <input
                             type="number"
@@ -1672,7 +1636,7 @@ export default function AdminPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
-                            Discount Price ($) (Optional)
+                            Discount Price (Rs.) (Optional)
                           </label>
                           <input
                             type="number"
@@ -1838,12 +1802,12 @@ export default function AdminPage() {
                         <th className="py-4 px-6 font-semibold text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5 text-[var(--muted)]">
+                    <tbody className="divide-y divide-[var(--border-subtle)] text-[var(--muted)]">
                       {profiles.map((p) => {
                         const isSelf = p.id === user?.id
                         const isTargetAdmin = p.role === 'admin'
                         return (
-                          <tr key={p.id} className="hover:bg-white/[0.02] transition">
+                          <tr key={p.id} className="hover:bg-[var(--border-subtle)] transition">
                             <td className="py-4 px-6">
                               <div className="flex items-center gap-3">
                                 <div className="flex h-9 w-9 items-center justify-center rounded-full gold-gradient-bg text-black font-bold">
@@ -1924,62 +1888,91 @@ export default function AdminPage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
-              {/* Category Sales Share */}
+              {/* Live Revenue by Dish / Order Breakdown */}
               <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-lg space-y-4">
                 <h4 className="font-serif text-lg font-bold text-[var(--foreground)]">
-                  Revenue by Category
+                  Top Revenue Dishes (Live Orders)
                 </h4>
-                <div className="space-y-3">
-                  {[
-                    { cat: 'Steaks & Flame Grills', percent: 38, amount: '$1,081.20' },
-                    { cat: 'Woodfired Artisan Pizza', percent: 26, amount: '$739.80' },
-                    { cat: 'Prime Wagyu Burgers', percent: 18, amount: '$512.10' },
-                    { cat: 'Handcrafted Pasta', percent: 11, amount: '$313.00' },
-                    { cat: 'Desserts & Beverages', percent: 7, amount: '$199.40' },
-                  ].map((c) => (
-                    <div key={c.cat} className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[var(--muted)] font-medium">{c.cat}</span>
-                        <span className="text-primary font-bold">{c.amount} ({c.percent}%)</span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-[var(--input)] overflow-hidden">
-                        <div
-                          className="h-full gold-gradient-bg rounded-full transition-all duration-700"
-                          style={{ width: `${c.percent}%` }}
-                        />
-                      </div>
+                {(() => {
+                  const dishTotals = new Map<string, number>()
+                  let grandTotal = 0
+                  for (const o of orders) {
+                    if (o.status === 'cancelled') continue
+                    for (const item of o.order_items || []) {
+                      const amt = Number(item.item_price || 0) * Number(item.quantity || 1)
+                      dishTotals.set(item.item_name, (dishTotals.get(item.item_name) || 0) + amt)
+                      grandTotal += amt
+                    }
+                  }
+                  const entries = Array.from(dishTotals.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5)
+                  if (entries.length === 0) {
+                    return <p className="text-xs text-[var(--muted-foreground)]">No completed order data yet.</p>
+                  }
+                  return (
+                    <div className="space-y-3">
+                      {entries.map(([name, amount]) => {
+                        const percent = grandTotal > 0 ? Math.round((amount / grandTotal) * 100) : 0
+                        return (
+                          <div key={name} className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-[var(--muted)] font-medium truncate max-w-[60%]">{name}</span>
+                              <span className="text-primary font-bold">Rs. {amount.toFixed(2)} ({percent}%)</span>
+                            </div>
+                            <div className="h-2 w-full rounded-full bg-[var(--input)] overflow-hidden">
+                              <div
+                                className="h-full gold-gradient-bg rounded-full transition-all duration-700"
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
-                  ))}
-                </div>
+                  )
+                })()}
               </div>
 
-              {/* Peak Dining Hours */}
+              {/* Peak Dining Hours from Live Reservations */}
               <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-lg space-y-4">
                 <h4 className="font-serif text-lg font-bold text-[var(--foreground)]">
-                  Peak Dining & Reservation Hours
+                  Reservation Time Slots (Live Bookings)
                 </h4>
-                <div className="space-y-3">
-                  {[
-                    { time: '07:30 PM – 08:30 PM (Dinner Rush)', load: 95 },
-                    { time: '08:30 PM – 09:30 PM (Late Dinner)', load: 85 },
-                    { time: '01:00 PM – 02:00 PM (Lunch Hour)', load: 60 },
-                    { time: '06:30 PM – 07:30 PM (Early Evening)', load: 50 },
-                    { time: '09:30 PM – 11:00 PM (Lounge Cocktails)', load: 45 },
-                  ].map((h) => (
-                    <div key={h.time} className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[var(--muted)]">{h.time}</span>
-                        <span className="text-amber-300 font-semibold">{h.load}% Capacity</span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-[var(--input)] overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-amber-600 to-yellow-400 rounded-full transition-all duration-700"
-                          style={{ width: `${h.load}%` }}
-                        />
-                      </div>
+                {(() => {
+                  const slotCounts = new Map<string, number>()
+                  for (const r of reservations) {
+                    if (r.status === 'rejected') continue
+                    const slot = r.reservation_time || 'Unscheduled'
+                    slotCounts.set(slot, (slotCounts.get(slot) || 0) + 1)
+                  }
+                  const entries = Array.from(slotCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5)
+                  const maxCount = entries.length > 0 ? entries[0][1] : 1
+                  if (entries.length === 0) {
+                    return <p className="text-xs text-[var(--muted-foreground)]">No reservation data yet.</p>
+                  }
+                  return (
+                    <div className="space-y-3">
+                      {entries.map(([time, count]) => {
+                        const load = Math.round((count / maxCount) * 100)
+                        return (
+                          <div key={time} className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-[var(--muted)]">{time}</span>
+                              <span className="text-primary font-semibold">{count} Booking(s)</span>
+                            </div>
+                            <div className="h-2 w-full rounded-full bg-[var(--input)] overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-amber-600 to-yellow-400 rounded-full transition-all duration-700"
+                                style={{ width: `${load}%` }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
-                  ))}
-                </div>
+                  )
+                })()}
               </div>
             </div>
           </motion.div>

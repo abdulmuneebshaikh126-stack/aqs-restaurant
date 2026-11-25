@@ -102,6 +102,12 @@ export async function POST(req: NextRequest) {
       let itemName = item.item_name || item.name || 'Delicacy'
 
       if (itemLookup) {
+        if (itemLookup.is_available === false) {
+          return NextResponse.json(
+            { error: `${itemLookup.name} is currently unavailable.` },
+            { status: 400 }
+          )
+        }
         unitPrice = itemLookup.discount_price ?? itemLookup.price
         itemName = itemLookup.name
       } else {

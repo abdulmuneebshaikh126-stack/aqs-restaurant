@@ -1,5 +1,6 @@
 import path from 'path'
 import fs from 'fs'
+import { RESTAURANT_CONFIG } from '@/lib/config/restaurant'
 
 // Interface definitions for the Knowledge Base
 export interface RestaurantInfo {
@@ -64,16 +65,16 @@ export interface KnowledgeBaseSnapshot {
   lastUpdated: string
 }
 
-// Verified data extracted directly from the existing APNA-DERA Restaurant codebase
+// Verified data extracted directly from the existing APNA DERA Restaurant codebase
 const VERIFIED_RESTAURANT_INFO: RestaurantInfo = {
-  name: 'APNA-DERA Restaurant',
-  tagline: 'Good Food • Good Mood',
+  name: RESTAURANT_CONFIG.fullName,
+  tagline: RESTAURANT_CONFIG.tagline,
   description:
     'Where culinary passion meets sophisticated taste. Crafting memorable dining experiences with the finest ingredients. Indulge in our curated symphony of extraordinary flavors fusing culinary artistry with modern dining excellence.',
-  address: '123 Luxury Avenue, Gourmet District',
-  phone: '+92 300 1234567',
-  email: 'contact@apnadera.com',
-  delivery_fee: 5.0,
+  address: RESTAURANT_CONFIG.address,
+  phone: RESTAURANT_CONFIG.phone,
+  email: RESTAURANT_CONFIG.email,
+  delivery_fee: RESTAURANT_CONFIG.deliveryFee,
   delivery_time: 'Hot and fresh dishes delivered directly to your doorstep in 30 minutes.',
   payment_methods: 'Cash on Delivery (COD)',
   order_tracking:
@@ -379,7 +380,7 @@ const VERIFIED_FAQS: FAQKB[] = [
     topic: 'Delivery',
     question: 'What is your delivery fee and delivery time?',
     answer:
-      'We deliver hot and fresh within 30 minutes. Our flat delivery fee is $5.00 for all orders within our gourmet delivery radius.',
+      'We deliver hot and fresh within 30 minutes. Our flat delivery fee is Rs. 5.00 for all orders within our gourmet delivery radius.',
   },
   {
     topic: 'Payment',
@@ -389,15 +390,15 @@ const VERIFIED_FAQS: FAQKB[] = [
   },
   {
     topic: 'Opening Hours',
-    question: 'What are the opening and closing hours of APNA-DERA Restaurant?',
+    question: 'What are the opening and closing hours of APNA DERA Restaurant?',
     answer:
-      'APNA-DERA Restaurant is open: Monday – Thursday: 11:00 AM – 11:00 PM | Friday – Saturday: 11:00 AM – 12:00 AM (Midnight) | Sunday: 12:00 PM – 10:00 PM.',
+      'APNA DERA Restaurant is open: Monday – Thursday: 11:00 AM – 11:00 PM | Friday – Saturday: 11:00 AM – 12:00 AM (Midnight) | Sunday: 12:00 PM – 10:00 PM.',
   },
   {
     topic: 'Location',
-    question: 'Where is APNA-DERA Restaurant located?',
+    question: 'Where is APNA DERA Restaurant located?',
     answer:
-      'APNA-DERA Restaurant is located at 123 Luxury Avenue, Gourmet District. You can reach our front desk by phone at +92 300 1234567 or by email at contact@apnadera.com.',
+      'APNA DERA Restaurant is located at 123 Luxury Avenue, Gourmet District. You can reach our front desk by phone at +92 300 1234567 or by email at contact@apnadera.com.',
   },
   {
     topic: 'Ordering',

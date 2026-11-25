@@ -1,6 +1,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { RESTAURANT_CONFIG } from '@/lib/config/restaurant'
 
 export default function Footer() {
   return (
@@ -12,7 +13,7 @@ export default function Footer() {
             <div className="relative h-14 w-14 overflow-hidden rounded-full border border-primary/50 shadow-lg">
               <Image
                 src="/images/logo.jpg"
-                alt="APNA-DERA Restaurant"
+                alt="APNA DERA Restaurant"
                 fill
                 sizes="56px"
                 className="object-cover"
@@ -20,7 +21,7 @@ export default function Footer() {
             </div>
             <div>
               <h3 className="font-serif text-xl font-bold gold-gradient-text tracking-wide">
-                APNA-DERA
+                APNA DERA
               </h3>
               <p className="text-[10px] uppercase tracking-[0.25em] text-primary -mt-1">
                 Restaurant
@@ -55,9 +56,9 @@ export default function Footer() {
             Contact
           </h4>
           <ul className="space-y-2.5 text-sm text-[var(--foreground)] opacity-75">
-            <li>123 Luxury Avenue, Gourmet District</li>
-            <li>+92 300 1234567</li>
-            <li>contact@apnadera.com</li>
+            <li>{RESTAURANT_CONFIG.address}</li>
+            <li>{RESTAURANT_CONFIG.phone}</li>
+            <li>{RESTAURANT_CONFIG.email}</li>
           </ul>
         </div>
 
@@ -75,7 +76,7 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-primary/20 py-6 text-center text-xs tracking-wider text-[var(--foreground)] opacity-60">
-        © {new Date().getFullYear()} APNA-DERA Restaurant. All rights reserved.
+        © {new Date().getFullYear()} APNA DERA Restaurant. All rights reserved.
       </div>
     </footer>
   )
