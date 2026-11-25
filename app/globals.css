@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,12 +8,43 @@
   --foreground: #F5F5F7;
   --primary: #C5A059;
   --secondary: #121214;
+  --surface: #141418;
+  --card: #1A1A20;
+  --input: #0c0c0e;
+  --muted: #9ca3af;
+  --muted-foreground: #6b7280;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --ring: rgba(197, 160, 89, 0.3);
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --background: #F5F1E9;
+  --foreground: #24211C;
+  --primary: #A77B32;
+  --secondary: #FFFFFF;
+  --surface: #EDE8DD;
+  --card: #E6E0D3;
+  --input: #FFFFFF;
+  --muted: #6b7264;
+  --muted-foreground: #8a8477;
+  --border: rgba(0, 0, 0, 0.12);
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --ring: rgba(167, 123, 50, 0.3);
+  color-scheme: light;
+}
+
+html {
+  background: var(--background);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-sans), system-ui, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 h1, h2, h3, h4, .font-restaurant {
@@ -21,6 +53,12 @@ h1, h2, h3, h4, .font-restaurant {
 
 .gold-gradient-text {
   background: linear-gradient(135deg, #FFF0D0 0%, #E5C158 35%, #C5A059 70%, #9E782F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+:root[data-theme='light'] .gold-gradient-text {
+  background: linear-gradient(135deg, #C9A035 0%, #A77B32 50%, #8B6520 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -35,6 +73,46 @@ h1, h2, h3, h4, .font-restaurant {
 
 .gold-glow {
   box-shadow: 0 0 25px rgba(197, 160, 89, 0.15);
+}
+
+/* Theme-aware utility classes */
+.theme-bg {
+  background-color: var(--background);
+}
+
+.theme-surface {
+  background-color: var(--surface);
+}
+
+.theme-card {
+  background-color: var(--card);
+}
+
+.theme-input {
+  background-color: var(--input);
+}
+
+.theme-text {
+  color: var(--foreground);
+}
+
+.theme-muted {
+  color: var(--muted);
+}
+
+.theme-border {
+  border-color: var(--border);
+}
+
+/* Date input color scheme follows theme */
+:root[data-theme='light'] input[type="date"] {
+  color-scheme: light;
+}
+
+/* SweetAlert2 theme override for light mode */
+:root[data-theme='light'] .swal2-popup {
+  background: var(--surface) !important;
+  color: var(--foreground) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

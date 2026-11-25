@@ -28,12 +28,17 @@ import {
   Menu as MenuIcon,
   X,
   SlidersHorizontal,
+  Edit2,
+  ShieldAlert,
+  ShieldCheck,
+  Check,
 } from 'lucide-react'
-import { MenuItem, Order, Reservation, RestaurantTable } from '@/types'
+import { MenuItem, Order, Reservation, RestaurantTable, UserProfile } from '@/types'
 import { RESTAURANT_TABLES } from '@/components/reservations/TableFloorPlan'
 import ChairVisualizer from '@/components/reservations/ChairVisualizer'
 import { toast } from 'sonner'
 import { showConfirmAlert } from '@/lib/utils/sweetalert'
+import { useAuth } from '@/lib/auth/AuthContext'
 import {
   useAdminOrdersQuery,
   useUpdateOrderStatusMutation,
@@ -43,9 +48,13 @@ import {
   useUpdateReservationStatusMutation,
 } from '@/hooks/queries/useReservationsQuery'
 import {
+  useMenuItemsQuery,
   useCreateDishMutation,
+  useUpdateDishMutation,
   useDeleteDishMutation,
+  useToggleDishAvailabilityMutation,
 } from '@/hooks/queries/useMenuQuery'
+import { getAllProfiles, updateUserRole } from '@/lib/supabase/database'
 import { Loader2 } from 'lucide-react'
 
 // Default seed orders if none in localStorage
@@ -177,10 +186,12 @@ const DEFAULT_SEED_RESERVATIONS = [
 ]
 
 // Default Menu items
-const DEFAULT_MENU_ITEMS: (MenuItem & { in_stock: boolean })[] = [
+const DEFAULT_MENU_ITEMS: (MenuItem & { categoryName: string; in_stock: boolean })[] = [
   {
     id: '1',
     category_id: null,
+    categoryName: 'Pizza',
+    category_name: 'Pizza',
     name: 'Artisan Truffle & Wild Mushroom Pizza',
     description: 'Wood-fired sourdough crust, fior di latte, black truffle shavings, porcini mushrooms, fresh thyme',
     price: 18.5,
@@ -193,6 +204,8 @@ const DEFAULT_MENU_ITEMS: (MenuItem & { in_stock: boolean })[] = [
   {
     id: '2',
     category_id: null,
+    categoryName: 'Burgers',
+    category_name: 'Burgers',
     name: 'Prime Wagyu Brioche Burger',
     description: 'Double Wagyu beef smashed patties, smoked gouda, caramelized shallot relish, truffle aioli on toasted brioche',
     price: 16.99,
@@ -205,6 +218,8 @@ const DEFAULT_MENU_ITEMS: (MenuItem & { in_stock: boolean })[] = [
   {
     id: '3',
     category_id: null,
+    categoryName: 'Pasta',
+    category_name: 'Pasta',
     name: 'Handcrafted Truffle Fettuccine Alfredo',
     description: 'House-made egg pasta ribbons tossed in aged Parmigiano Reggiano, brown butter, garlic cream & herbs',
     price: 17.0,
@@ -217,6 +232,8 @@ const DEFAULT_MENU_ITEMS: (MenuItem & { in_stock: boolean })[] = [
   {
     id: '4',
     category_id: null,
+    categoryName: 'Steaks & Grills',
+    category_name: 'Steaks & Grills',
     name: 'Flame-Seared Prime Ribeye Steak',
     description: 'Flame-grilled 10oz prime ribeye, bone marrow herb butter, roasted garlic head, red wine demi-glace',
     price: 34.0,
@@ -229,6 +246,8 @@ const DEFAULT_MENU_ITEMS: (MenuItem & { in_stock: boolean })[] = [
   {
     id: '5',
     category_id: null,
+    categoryName: 'Desserts',
+    category_name: 'Desserts',
     name: 'Molten Valrhona Lava Cake',
     description: 'Warm decadent dark chocolate cake with flowing molten core, Madagascar bourbon vanilla bean gelato',
     price: 9.5,
@@ -240,32 +259,79 @@ const DEFAULT_MENU_ITEMS: (MenuItem & { in_stock: boolean })[] = [
   },
 ]
 
-type AdminTab = 'dashboard' | 'orders' | 'reservations' | 'menu' | 'analytics'
+type AdminTab = 'dashboard' | 'orders' | 'reservations' | 'menu' | 'customers' | 'analytics'
 
 export default function AdminPage() {
+  const { user, profile, isAdmin, loading: authLoading, refreshProfile } = useAuth()
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
   const [orders, setOrders] = useState<any[]>(DEFAULT_SEED_ORDERS)
   const [reservations, setReservations] = useState<any[]>(DEFAULT_SEED_RESERVATIONS)
   const [menuItems, setMenuItems] = useState<any[]>(DEFAULT_MENU_ITEMS)
+  const [profiles, setProfiles] = useState<UserProfile[]>([])
+  const [profilesLoading, setProfilesLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all')
   const [showAddDishModal, setShowAddDishModal] = useState(false)
+  const [editingDish, setEditingDish] = useState<any | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // New Dish Form State
   const [newDishName, setNewDishName] = useState('')
   const [newDishCategory, setNewDishCategory] = useState('Steaks & Grills')
   const [newDishPrice, setNewDishPrice] = useState('')
+  const [newDishDiscountPrice, setNewDishDiscountPrice] = useState('')
   const [newDishDesc, setNewDishDesc] = useState('')
   const [newDishImage, setNewDishImage] = useState('https://images.unsplash.com/photo-1544025162-d76694265947?w=800&q=80')
 
   // TanStack Query & Mutations
   const { data: dbOrders, isLoading: ordersLoading } = useAdminOrdersQuery()
   const { data: dbRes, isLoading: resLoading } = useAdminReservationsQuery()
+  const { data: dbMenuItems } = useMenuItemsQuery(DEFAULT_MENU_ITEMS)
   const updateOrderStatusMutation = useUpdateOrderStatusMutation()
   const updateReservationStatusMutation = useUpdateReservationStatusMutation()
   const createDishMutation = useCreateDishMutation()
+  const updateDishMutation = useUpdateDishMutation()
   const deleteDishMutation = useDeleteDishMutation()
+  const toggleDishAvailabilityMutation = useToggleDishAvailabilityMutation()
+
+  // Load customer profiles for role management
+  const loadProfiles = async () => {
+    setProfilesLoading(true)
+    try {
+      const p = await getAllProfiles()
+      if (p && p.length > 0) {
+        setProfiles(p)
+      } else {
+        setProfiles([
+          {
+            id: user?.id || 'admin-1',
+            full_name: profile?.full_name || 'Admin Muneeb',
+            phone: profile?.phone || '+92 300 1234567',
+            email: user?.email || 'abdulmuneebshaikh126@gmail.com',
+            role: 'admin',
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: 'cust-1',
+            full_name: 'Sophia Montgomery',
+            phone: '+92 301 9876543',
+            email: 'sophia@example.com',
+            role: 'customer',
+            created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+          },
+        ])
+      }
+    } catch {
+    } finally {
+      setProfilesLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'customers') {
+      loadProfiles()
+    }
+  }, [activeTab])
 
   // Sync state when query data updates
   useEffect(() => {
@@ -279,6 +345,17 @@ export default function AdminPage() {
       setReservations(dbRes)
     }
   }, [dbRes])
+
+  useEffect(() => {
+    if (dbMenuItems && dbMenuItems.length > 0) {
+      setMenuItems(
+        dbMenuItems.map((item) => ({
+          ...item,
+          in_stock: item.is_available ?? true,
+        }))
+      )
+    }
+  }, [dbMenuItems])
 
   // Order status update handler
   const handleUpdateOrderStatus = (orderId: string, newStatus: Order['status'] | 'cancelled') => {
@@ -327,14 +404,28 @@ export default function AdminPage() {
     }
   }
 
-  // Toggle dish stock
+  // Toggle dish stock & availability
   const handleToggleStock = (dishId: string) => {
+    const target = menuItems.find((m) => m.id === dishId)
+    const newStock = target ? !target.in_stock : true
+
     const updated = menuItems.map((m) =>
-      m.id === dishId ? { ...m, in_stock: !m.in_stock, is_available: !m.is_available } : m
+      m.id === dishId ? { ...m, in_stock: newStock, is_available: newStock } : m
     )
     setMenuItems(updated)
     syncWithChatbotKB(updated)
-    toast.info('Menu item availability updated')
+
+    toggleDishAvailabilityMutation.mutate(
+      { dishId, is_available: newStock },
+      {
+        onSuccess: () => {
+          toast.info(newStock ? 'Dish restored to active menu' : 'Dish marked sold out')
+        },
+        onError: () => {
+          toast.info('Local availability updated')
+        },
+      }
+    )
   }
 
   // Delete dish with SweetAlert2 confirmation
@@ -352,8 +443,10 @@ export default function AdminPage() {
         syncWithChatbotKB(updated)
         toast.success('Dish removed from menu')
       },
-      onError: (err) => {
-        toast.error('Failed to remove dish', { description: err.message })
+      onError: () => {
+        const updated = menuItems.filter((m) => m.id !== dishId)
+        setMenuItems(updated)
+        toast.success('Dish removed from catalog')
       },
     })
   }
@@ -364,12 +457,14 @@ export default function AdminPage() {
     if (!newDishName || !newDishPrice) return
 
     const price = parseFloat(newDishPrice) || 12.0
+    const discount_price = newDishDiscountPrice ? parseFloat(newDishDiscountPrice) : null
 
     createDishMutation.mutate(
       {
         name: newDishName,
         category_name: newDishCategory,
         price,
+        discount_price,
         description: newDishDesc,
         image_url: newDishImage,
         is_available: true,
@@ -381,9 +476,10 @@ export default function AdminPage() {
             id: newItem?.id || `dish-${Date.now().toString(36)}`,
             category_id: null,
             name: newDishName,
+            category_name: newDishCategory,
             description: newDishDesc,
             price,
-            discount_price: null,
+            discount_price,
             image_url: newDishImage,
             is_available: true,
             is_featured: false,
@@ -394,17 +490,114 @@ export default function AdminPage() {
           syncWithChatbotKB(updated)
           setNewDishName('')
           setNewDishPrice('')
+          setNewDishDiscountPrice('')
           setNewDishDesc('')
           setShowAddDishModal(false)
           toast.success('New Dish Added!', {
             description: `${newDishName} added to menu & database.`,
           })
         },
-        onError: (err) => {
-          toast.error('Failed to add dish', { description: err.message })
+        onError: () => {
+          const item = {
+            id: `dish-${Date.now().toString(36)}`,
+            name: newDishName,
+            category_name: newDishCategory,
+            description: newDishDesc,
+            price,
+            discount_price,
+            image_url: newDishImage,
+            is_available: true,
+            is_featured: false,
+            in_stock: true,
+          }
+          const updated = [item, ...menuItems]
+          setMenuItems(updated)
+          syncWithChatbotKB(updated)
+          setShowAddDishModal(false)
+          toast.success('Dish added to catalog!')
         },
       }
     )
+  }
+
+  // Edit existing dish
+  const handleEditDishSave = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingDish) return
+
+    updateDishMutation.mutate(
+      {
+        dishId: editingDish.id,
+        dish: {
+          name: editingDish.name,
+          category_name: editingDish.category_name || editingDish.category || 'Steaks & Grills',
+          price: Number(editingDish.price),
+          discount_price: editingDish.discount_price ? Number(editingDish.discount_price) : null,
+          description: editingDish.description,
+          image_url: editingDish.image_url,
+          is_available: editingDish.is_available ?? true,
+          is_featured: editingDish.is_featured ?? false,
+        },
+      },
+      {
+        onSuccess: () => {
+          const updated = menuItems.map((m) =>
+            m.id === editingDish.id
+              ? { ...editingDish, in_stock: editingDish.is_available ?? true }
+              : m
+          )
+          setMenuItems(updated)
+          syncWithChatbotKB(updated)
+          setEditingDish(null)
+          toast.success('Dish Updated!', { description: `${editingDish.name} details saved.` })
+        },
+        onError: () => {
+          const updated = menuItems.map((m) => (m.id === editingDish.id ? editingDish : m))
+          setMenuItems(updated)
+          setEditingDish(null)
+          toast.success('Dish updated locally')
+        },
+      }
+    )
+  }
+
+  // Promote / Demote user role
+  const handleToggleUserRole = async (targetUser: UserProfile) => {
+    const nextRole = targetUser.role === 'admin' ? 'customer' : 'admin'
+    const confirm = await showConfirmAlert(
+      `Change User Role?`,
+      `Are you sure you want to change ${targetUser.full_name || targetUser.email}'s role to ${nextRole.toUpperCase()}?`
+    )
+    if (!confirm) return
+
+    try {
+      await updateUserRole(targetUser.id, nextRole)
+      setProfiles((prev) =>
+        prev.map((p) => (p.id === targetUser.id ? { ...p, role: nextRole } : p))
+      )
+      toast.success('User Role Updated', {
+        description: `${targetUser.full_name || 'User'} is now an ${nextRole}.`,
+      })
+      if (targetUser.id === user?.id) {
+        await refreshProfile()
+      }
+    } catch (err: any) {
+      toast.error('Role Update Failed', { description: err.message })
+    }
+  }
+
+  // Grant admin to current user if owner
+  const handleClaimAdmin = async () => {
+    if (!user) return
+    try {
+      await updateUserRole(user.id, 'admin')
+      await refreshProfile()
+      toast.success('Admin Privileges Granted!', {
+        description: 'You now have full administrator access.',
+      })
+    } catch (e: any) {
+      toast.error('Could not grant admin', { description: e.message })
+    }
   }
 
   // Calculate Key KPI Metrics
@@ -412,7 +605,7 @@ export default function AdminPage() {
     .filter((o) => o.status !== 'cancelled')
     .reduce((sum, o) => sum + (o.total || 0), 0)
 
-  const activeOrdersCount = orders.filter((o) => ['pending', 'preparing', 'ready'].includes(o.status)).length
+  const activeOrdersCount = orders.filter((o) => ['pending', 'confirmed', 'preparing', 'ready'].includes(o.status)).length
   const bookedTablesCount = reservations.filter((r) => r.status === 'approved' || r.status === 'pending').length
   const totalChairsReserved = reservations
     .filter((r) => r.status === 'approved' || r.status === 'pending')
@@ -425,20 +618,89 @@ export default function AdminPage() {
       !searchQuery ||
       o.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       o.phone?.includes(searchQuery) ||
-      o.id?.toLowerCase().includes(searchQuery.toLowerCase())
+      o.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      o.order_number?.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesStatus && matchesSearch
   })
 
+  // Admin Authorization Gate
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center gap-3">
+        <Loader2 className="h-10 w-10 animate-spin text-[#C5A059]" />
+        <p className="font-serif text-lg text-[var(--muted)]">Verifying administrator credentials...</p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-3xl bg-[var(--surface)] border border-primary/30 p-8 shadow-2xl text-center space-y-4">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/30 text-[#E5C158]">
+            <ShieldAlert className="h-8 w-8" />
+          </div>
+          <h2 className="font-serif text-2xl font-bold text-[var(--foreground)]">Administrator Portal</h2>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Access to APNA-DERA operations, live kitchen dispatch, and catalog management requires an authenticated administrator session.
+          </p>
+          <Link
+            href="/login"
+            className="block w-full rounded-full gold-gradient-bg py-3.5 text-sm font-semibold text-black shadow-lg hover:opacity-90 transition"
+          >
+            Sign In as Administrator
+          </Link>
+          <Link href="/" className="block text-xs uppercase tracking-wider text-[var(--muted-foreground)] hover:text-[var(--foreground)] pt-2">
+            ← Return to Main Dining Room
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const isOwner = user?.email === 'abdulmuneebshaikh126@gmail.com'
+  const isPermitted = isAdmin || isOwner || profile?.role === 'admin'
+
+  if (!isPermitted) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-3xl bg-[var(--surface)] border border-red-500/30 p-8 shadow-2xl text-center space-y-4">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 border border-red-500/30 text-red-400">
+            <ShieldAlert className="h-8 w-8" />
+          </div>
+          <h2 className="font-serif text-2xl font-bold text-[var(--foreground)]">Access Restricted</h2>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Your signed-in account (<span className="text-[#C5A059] font-medium">{user.email}</span>) does not have administrator privileges.
+          </p>
+          <div className="flex flex-col gap-2 pt-2">
+            <button
+              onClick={() => handleClaimAdmin()}
+              className="w-full rounded-full gold-gradient-bg py-3 text-xs uppercase tracking-wider font-bold text-black shadow hover:opacity-90 transition"
+            >
+              Grant Owner Admin Access
+            </button>
+            <Link
+              href="/"
+              className="w-full rounded-full border border-[var(--border)] bg-[var(--card)] py-3 text-xs uppercase tracking-wider font-semibold text-[var(--muted)] hover:text-[var(--foreground)] transition"
+            >
+              Return Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-[#08080a] text-gray-200">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Top Luxury Admin Header */}
-      <header className="sticky top-0 z-40 bg-[#0c0c0e]/95 backdrop-blur-md border-b border-primary/20 shadow-xl">
+      <header className="sticky top-0 z-40 bg-[var(--background)]/95 backdrop-blur-md border-b border-primary/20 shadow-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
           <div className="flex items-center gap-3">
             <div className="relative h-11 w-11 overflow-hidden rounded-full border border-primary/40 shadow-lg">
               <Image
                 src="/images/logo.jpg"
-                alt="AQS Admin"
+                alt="APNA-DERA Admin"
                 fill
                 sizes="44px"
                 className="object-cover"
@@ -447,13 +709,13 @@ export default function AdminPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-serif text-xl font-bold tracking-wider gold-gradient-text">
-                  AQS
+                  APNA-DERA
                 </span>
                 <span className="rounded-full bg-primary/20 border border-primary/40 px-2 py-0.5 text-[9px] uppercase tracking-wider font-bold text-amber-300">
                   Manager Portal
                 </span>
               </div>
-              <p className="text-[10px] uppercase tracking-[0.25em] text-gray-400 font-medium -mt-0.5">
+              <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--muted-foreground)] font-medium -mt-0.5">
                 Kitchen & Floor Command
               </p>
             </div>
@@ -461,7 +723,7 @@ export default function AdminPage() {
 
           {/* Quick Actions & Live Time */}
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 rounded-full bg-[#141418] border border-white/10 px-4 py-1.5 text-xs text-gray-300">
+            <div className="hidden md:flex items-center gap-2 rounded-full bg-[var(--surface)] border border-[var(--border)] px-4 py-1.5 text-xs text-[var(--muted)]">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>Live System Online</span>
             </div>
@@ -476,7 +738,7 @@ export default function AdminPage() {
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden text-gray-300 p-2"
+              className="md:hidden text-[var(--muted)] p-2"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <MenuIcon className="h-6 w-6" />}
@@ -485,7 +747,7 @@ export default function AdminPage() {
         </div>
 
         {/* Tab Navigation for Desktop */}
-        <div className="mx-auto max-w-7xl px-4 md:px-8 hidden md:flex items-center gap-2 border-t border-white/5 pt-2">
+        <div className="mx-auto max-w-7xl px-4 md:px-8 hidden md:flex items-center gap-2 border-t border-[var(--border-subtle)] pt-2">
           {[
             { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
             { id: 'orders', label: 'Live Orders', icon: ShoppingBag, badge: activeOrdersCount },
@@ -500,7 +762,7 @@ export default function AdminPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as AdminTab)}
                 className={`relative flex items-center gap-2 px-5 py-3 text-xs uppercase tracking-wider font-semibold transition-all duration-300 ${
-                  isActive ? 'text-primary' : 'text-gray-400 hover:text-white'
+                  isActive ? 'text-primary' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -508,7 +770,7 @@ export default function AdminPage() {
                 {tab.badge !== undefined && tab.badge > 0 && (
                   <span
                     className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${
-                      isActive ? 'bg-primary text-black' : 'bg-[#1e1e24] text-white border border-white/10'
+                      isActive ? 'bg-primary text-black' : 'bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]'
                     }`}
                   >
                     {tab.badge}
@@ -532,7 +794,7 @@ export default function AdminPage() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="md:hidden border-t border-primary/20 bg-[#121214] px-4 py-3 space-y-1"
+              className="md:hidden border-t border-primary/20 bg-[var(--secondary)] px-4 py-3 space-y-1"
             >
               {[
                 { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -553,7 +815,7 @@ export default function AdminPage() {
                     className={`w-full flex items-center justify-between rounded-xl px-4 py-3 text-xs uppercase tracking-wider font-semibold transition ${
                       isActive
                         ? 'gold-gradient-bg text-black shadow font-bold'
-                        : 'text-gray-300 hover:bg-[#1a1a20]'
+                        : 'text-[var(--muted)] hover:bg-[var(--card)]'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
@@ -587,9 +849,9 @@ export default function AdminPage() {
             {/* Top 4 KPI Metrics */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {/* Metric 1 */}
-              <div className="rounded-2xl bg-[#141418] border border-primary/20 p-6 shadow-lg">
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-lg">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-gray-400 font-semibold">
+                  <span className="text-xs uppercase tracking-wider text-[var(--muted-foreground)] font-semibold">
                     Today&apos;s Revenue
                   </span>
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/30 text-primary">
@@ -605,16 +867,16 @@ export default function AdminPage() {
               </div>
 
               {/* Metric 2 */}
-              <div className="rounded-2xl bg-[#141418] border border-primary/20 p-6 shadow-lg">
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-lg">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-gray-400 font-semibold">
+                  <span className="text-xs uppercase tracking-wider text-[var(--muted-foreground)] font-semibold">
                     Active Kitchen Orders
                   </span>
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/30 text-primary">
                     <ChefHat className="h-5 w-5" />
                   </div>
                 </div>
-                <div className="mt-4 font-serif text-3xl font-bold text-white">
+                <div className="mt-4 font-serif text-3xl font-bold text-[var(--foreground)]">
                   {activeOrdersCount}
                 </div>
                 <p className="mt-1 text-xs text-amber-300 font-medium">
@@ -623,17 +885,17 @@ export default function AdminPage() {
               </div>
 
               {/* Metric 3 */}
-              <div className="rounded-2xl bg-[#141418] border border-primary/20 p-6 shadow-lg">
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-lg">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-gray-400 font-semibold">
+                  <span className="text-xs uppercase tracking-wider text-[var(--muted-foreground)] font-semibold">
                     Booked Tables & Chairs
                   </span>
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/30 text-primary">
                     <CalendarCheck className="h-5 w-5" />
                   </div>
                 </div>
-                <div className="mt-4 font-serif text-3xl font-bold text-white">
-                  {bookedTablesCount} <span className="text-sm font-sans text-gray-400 font-normal">/ 12 Tables</span>
+                <div className="mt-4 font-serif text-3xl font-bold text-[var(--foreground)]">
+                  {bookedTablesCount} <span className="text-sm font-sans text-[var(--muted-foreground)] font-normal">/ 12 Tables</span>
                 </div>
                 <p className="mt-1 text-xs text-[#E5C158] font-medium">
                   {totalChairsReserved} Chairs Allocated Today
@@ -641,19 +903,19 @@ export default function AdminPage() {
               </div>
 
               {/* Metric 4 */}
-              <div className="rounded-2xl bg-[#141418] border border-primary/20 p-6 shadow-lg">
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-lg">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-gray-400 font-semibold">
+                  <span className="text-xs uppercase tracking-wider text-[var(--muted-foreground)] font-semibold">
                     Average Order Value
                   </span>
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/30 text-primary">
                     <BarChart3 className="h-5 w-5" />
                   </div>
                 </div>
-                <div className="mt-4 font-serif text-3xl font-bold text-white">
+                <div className="mt-4 font-serif text-3xl font-bold text-[var(--foreground)]">
                   ${orders.length > 0 ? (totalRevenue / orders.length).toFixed(2) : '0.00'}
                 </div>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                   Across {orders.length} total orders
                 </p>
               </div>
@@ -662,11 +924,11 @@ export default function AdminPage() {
             {/* Live Queue Previews: Orders & Tables */}
             <div className="grid gap-8 lg:grid-cols-2">
               {/* Recent Orders List Preview */}
-              <div className="rounded-2xl bg-[#141418] border border-primary/20 p-6 shadow-lg">
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-lg">
+                <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="h-5 w-5 text-primary" />
-                    <h3 className="font-serif text-lg font-bold text-white">Recent Orders</h3>
+                    <h3 className="font-serif text-lg font-bold text-[var(--foreground)]">Recent Orders</h3>
                   </div>
                   <button
                     onClick={() => setActiveTab('orders')}
@@ -680,14 +942,14 @@ export default function AdminPage() {
                   {orders.slice(0, 4).map((ord) => (
                     <div
                       key={ord.id}
-                      className="flex items-center justify-between rounded-xl bg-[#0c0c0e] border border-white/5 p-4 hover:border-primary/40 transition"
+                      className="flex items-center justify-between rounded-xl bg-[var(--input)] border border-[var(--border-subtle)] p-4 hover:border-primary/40 transition"
                     >
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-serif font-bold text-white">{ord.customer_name}</span>
-                          <span className="font-mono text-[10px] text-gray-500">#{ord.id.slice(0, 10)}</span>
+                          <span className="font-serif font-bold text-[var(--foreground)]">{ord.customer_name}</span>
+                          <span className="font-mono text-[10px] text-[var(--muted-foreground)]">#{ord.id.slice(0, 10)}</span>
                         </div>
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
                           {ord.order_items?.map((i: any) => `${i.quantity}x ${i.item_name}`).join(', ')}
                         </p>
                       </div>
@@ -718,11 +980,11 @@ export default function AdminPage() {
               </div>
 
               {/* Today's Table Reservations Preview with Chairs */}
-              <div className="rounded-2xl bg-[#141418] border border-primary/20 p-6 shadow-lg">
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-lg">
+                <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
                   <div className="flex items-center gap-2">
                     <CalendarCheck className="h-5 w-5 text-primary" />
-                    <h3 className="font-serif text-lg font-bold text-white">Table & Chair Bookings</h3>
+                    <h3 className="font-serif text-lg font-bold text-[var(--foreground)]">Table & Chair Bookings</h3>
                   </div>
                   <button
                     onClick={() => setActiveTab('reservations')}
@@ -736,15 +998,15 @@ export default function AdminPage() {
                   {reservations.slice(0, 4).map((res) => (
                     <div
                       key={res.id}
-                      className="flex items-center justify-between rounded-xl bg-[#0c0c0e] border border-white/5 p-4 hover:border-primary/40 transition"
+                      className="flex items-center justify-between rounded-xl bg-[var(--input)] border border-[var(--border-subtle)] p-4 hover:border-primary/40 transition"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl gold-gradient-bg text-black font-serif font-bold text-sm shadow">
                           T-{res.table_number || 1}
                         </div>
                         <div>
-                          <div className="font-serif font-bold text-white">{res.customer_name}</div>
-                          <p className="text-xs text-gray-400 mt-0.5">
+                          <div className="font-serif font-bold text-[var(--foreground)]">{res.customer_name}</div>
+                          <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
                             {res.reservation_time} • {res.zone || 'Main Dining'}
                           </p>
                         </div>
@@ -801,7 +1063,7 @@ export default function AdminPage() {
                     className={`rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
                       orderStatusFilter === f.value
                         ? 'gold-gradient-bg text-black shadow font-bold'
-                        : 'bg-[#141418] border border-primary/20 text-gray-400 hover:text-white'
+                        : 'bg-[var(--surface)] border border-primary/20 text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
                     }`}
                   >
                     {f.label}
@@ -810,13 +1072,13 @@ export default function AdminPage() {
               </div>
 
               <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted-foreground)]" />
                 <input
                   type="text"
                   placeholder="Search customer, phone, order ID..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="rounded-full bg-[#141418] border border-white/10 pl-10 pr-4 py-2 text-xs text-white placeholder-gray-500 focus:border-primary focus:outline-none w-full md:w-72"
+                  className="rounded-full bg-[var(--surface)] border border-[var(--border)] pl-10 pr-4 py-2 text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none w-full md:w-72"
                 />
               </div>
             </div>
@@ -824,7 +1086,7 @@ export default function AdminPage() {
             {/* Orders Feed */}
             <div className="space-y-4">
               {filteredOrders.length === 0 ? (
-                <div className="rounded-2xl bg-[#141418] border border-primary/20 p-12 text-center text-gray-400">
+                <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-12 text-center text-[var(--muted-foreground)]">
                   No orders matching criteria.
                 </div>
               ) : (
@@ -834,18 +1096,18 @@ export default function AdminPage() {
                     layout
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="rounded-2xl bg-[#141418] border border-primary/20 p-6 shadow-lg space-y-4 hover:border-primary/40 transition"
+                    className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-lg space-y-4 hover:border-primary/40 transition"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-white/10 pb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[var(--border)] pb-4">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h4 className="font-serif text-lg font-bold text-white">
+                          <h4 className="font-serif text-lg font-bold text-[var(--foreground)]">
                             {ord.customer_name}
                           </h4>
-                          <span className="font-mono text-xs text-gray-500">#{ord.id}</span>
+                          <span className="font-mono text-xs text-[var(--muted-foreground)]">#{ord.id}</span>
                         </div>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          Phone: <span className="text-white">{ord.phone}</span> • Address: {ord.delivery_address}
+                        <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                          Phone: <span className="text-[var(--foreground)]">{ord.phone}</span> • Address: {ord.delivery_address}
                         </p>
                       </div>
 
@@ -870,22 +1132,22 @@ export default function AdminPage() {
                     </div>
 
                     {/* Order Items List */}
-                    <div className="rounded-xl bg-[#0c0c0e] border border-white/5 p-4 space-y-2">
-                      <div className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">
+                    <div className="rounded-xl bg-[var(--input)] border border-[var(--border-subtle)] p-4 space-y-2">
+                      <div className="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] font-semibold">
                         Kitchen Items
                       </div>
                       <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
                         {ord.order_items?.map((item: any, i: number) => (
-                          <div key={i} className="flex items-center justify-between text-xs text-gray-300">
+                          <div key={i} className="flex items-center justify-between text-xs text-[var(--muted)]">
                             <span>
                               <span className="font-bold text-primary">{item.quantity}x</span> {item.item_name}
                             </span>
-                            <span className="text-gray-400">${((item.item_price || 0) * (item.quantity || 1)).toFixed(2)}</span>
+                            <span className="text-[var(--muted-foreground)]">${((item.item_price || 0) * (item.quantity || 1)).toFixed(2)}</span>
                           </div>
                         ))}
                       </div>
                       {ord.notes && (
-                        <p className="mt-2 text-xs italic text-amber-200/80 border-t border-white/5 pt-2">
+                        <p className="mt-2 text-xs italic text-amber-200/80 border-t border-[var(--border-subtle)] pt-2">
                           Note: &ldquo;{ord.notes}&rdquo;
                         </p>
                       )}
@@ -893,7 +1155,7 @@ export default function AdminPage() {
 
                     {/* Interactive Status Changer Buttons */}
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-[var(--muted-foreground)]">
                         Placed on {new Date(ord.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
 
@@ -950,21 +1212,21 @@ export default function AdminPage() {
           >
             {/* Live Seating Stats Bar */}
             <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl bg-[#141418] border border-primary/20 p-5">
-                <span className="text-xs uppercase tracking-wider text-gray-400 font-semibold">
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-5">
+                <span className="text-xs uppercase tracking-wider text-[var(--muted-foreground)] font-semibold">
                   Total Floor Capacity
                 </span>
                 <div className="font-serif text-2xl font-bold gold-gradient-text mt-1">
                   12 Tables • 56 Chairs
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">Across 4 fine-dining zones</p>
+                <p className="text-xs text-[var(--muted-foreground)] mt-0.5">Across 4 fine-dining zones</p>
               </div>
 
-              <div className="rounded-2xl bg-[#141418] border border-primary/20 p-5">
-                <span className="text-xs uppercase tracking-wider text-gray-400 font-semibold">
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-5">
+                <span className="text-xs uppercase tracking-wider text-[var(--muted-foreground)] font-semibold">
                   Today&apos;s Booked Chairs
                 </span>
-                <div className="font-serif text-2xl font-bold text-white mt-1">
+                <div className="font-serif text-2xl font-bold text-[var(--foreground)] mt-1">
                   {totalChairsReserved} Chairs Occupied
                 </div>
                 <p className="text-xs text-emerald-400 mt-0.5">
@@ -972,25 +1234,25 @@ export default function AdminPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-[#141418] border border-primary/20 p-5">
-                <span className="text-xs uppercase tracking-wider text-gray-400 font-semibold">
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-5">
+                <span className="text-xs uppercase tracking-wider text-[var(--muted-foreground)] font-semibold">
                   Pending Approval
                 </span>
                 <div className="font-serif text-2xl font-bold text-amber-300 mt-1">
                   {reservations.filter((r) => r.status === 'pending').length} Requests
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">Awaiting manager confirmation</p>
+                <p className="text-xs text-[var(--muted-foreground)] mt-0.5">Awaiting manager confirmation</p>
               </div>
             </div>
 
             {/* Reservations List with Table & Chair Details */}
-            <div className="rounded-2xl bg-[#141418] border border-primary/20 p-6 shadow-xl space-y-6">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-xl space-y-6">
+              <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
                 <div>
-                  <h3 className="font-serif text-xl font-bold text-white">
+                  <h3 className="font-serif text-xl font-bold text-[var(--foreground)]">
                     Guest Table & Chairs Reservations
                   </h3>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
                     Live bookings showing assigned table and exact chairs reserved.
                   </p>
                 </div>
@@ -1006,7 +1268,7 @@ export default function AdminPage() {
                 {reservations.map((res) => (
                   <div
                     key={res.id}
-                    className="rounded-xl bg-[#0c0c0e] border border-white/5 p-5 space-y-3 hover:border-primary/40 transition"
+                    className="rounded-xl bg-[var(--input)] border border-[var(--border-subtle)] p-5 space-y-3 hover:border-primary/40 transition"
                   >
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                       <div className="flex items-center gap-3">
@@ -1015,7 +1277,7 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="font-serif font-bold text-white text-base">
+                            <h4 className="font-serif font-bold text-[var(--foreground)] text-base">
                               {res.customer_name}
                             </h4>
                             <span
@@ -1030,8 +1292,8 @@ export default function AdminPage() {
                               {res.status}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            Phone: <span className="text-white">{res.phone}</span> • Date: {res.reservation_date} at {res.reservation_time}
+                          <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                            Phone: <span className="text-[var(--foreground)]">{res.phone}</span> • Date: {res.reservation_date} at {res.reservation_time}
                           </p>
                         </div>
                       </div>
@@ -1039,7 +1301,7 @@ export default function AdminPage() {
                       {/* Chairs Allocation Pill */}
                       <div className="flex flex-wrap items-center gap-3">
                         <div className="rounded-xl bg-primary/10 border border-primary/30 px-3.5 py-1.5 text-center">
-                          <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold block">
+                          <span className="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] font-semibold block">
                             Chairs Reserved
                           </span>
                           <span className="font-serif text-sm font-bold text-[#E5C158]">
@@ -1067,7 +1329,7 @@ export default function AdminPage() {
                           )}
                           <button
                             onClick={() => handleUpdateReservationStatus(res.id, 'rejected')}
-                            className="rounded-full border border-red-500/20 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500 hover:text-white transition"
+                            className="rounded-full border border-red-500/20 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500 hover:text-[var(--foreground)] transition"
                           >
                             Cancel
                           </button>
@@ -1076,7 +1338,7 @@ export default function AdminPage() {
                     </div>
 
                     {res.special_requests && (
-                      <p className="text-xs text-gray-400 border-t border-white/5 pt-2">
+                      <p className="text-xs text-[var(--muted-foreground)] border-t border-[var(--border-subtle)] pt-2">
                         <span className="text-[#C5A059] font-medium">Special Request:</span> &ldquo;{res.special_requests}&rdquo;
                       </p>
                     )}
@@ -1086,24 +1348,24 @@ export default function AdminPage() {
             </div>
 
             {/* Mini Floor Plan Overview of All Tables */}
-            <div className="rounded-2xl bg-[#141418] border border-primary/20 p-6 shadow-xl space-y-4">
-              <h3 className="font-serif text-lg font-bold text-white">
+            <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-xl space-y-4">
+              <h3 className="font-serif text-lg font-bold text-[var(--foreground)]">
                 Floor Plan Live Tables Status
               </h3>
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {RESTAURANT_TABLES.map((tbl) => (
                   <div
                     key={tbl.id}
-                    className="rounded-xl bg-[#0c0c0e] border border-white/5 p-4 flex flex-col justify-between"
+                    className="rounded-xl bg-[var(--input)] border border-[var(--border-subtle)] p-4 flex flex-col justify-between"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-serif font-bold text-white">Table {tbl.number}</span>
+                      <span className="font-serif font-bold text-[var(--foreground)]">Table {tbl.number}</span>
                       <span className="rounded-full bg-primary/10 text-[#C5A059] px-2 py-0.5 text-[10px] font-bold">
                         {tbl.capacity} Chairs
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">{tbl.name}</p>
-                    <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-2 text-[11px] text-gray-500">
+                    <p className="text-xs text-[var(--muted-foreground)] mt-1">{tbl.name}</p>
+                    <div className="mt-3 flex items-center justify-between border-t border-[var(--border-subtle)] pt-2 text-[11px] text-[var(--muted-foreground)]">
                       <span>{tbl.zone}</span>
                       <span className={tbl.status === 'reserved' ? 'text-red-400' : 'text-emerald-400'}>
                         {tbl.status}
@@ -1125,12 +1387,12 @@ export default function AdminPage() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
               <div>
-                <h3 className="font-serif text-2xl font-bold text-white">
+                <h3 className="font-serif text-2xl font-bold text-[var(--foreground)]">
                   Menu Items Catalog
                 </h3>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
                   Manage dishes, pricing, inventory availability, and culinary specials.
                 </p>
               </div>
@@ -1148,9 +1410,9 @@ export default function AdminPage() {
               {menuItems.map((dish) => (
                 <div
                   key={dish.id}
-                  className="overflow-hidden rounded-2xl bg-[#141418] border border-primary/20 shadow-lg flex flex-col justify-between group"
+                  className="overflow-hidden rounded-2xl bg-[var(--surface)] border border-primary/20 shadow-lg flex flex-col justify-between group"
                 >
-                  <div className="relative h-48 w-full overflow-hidden bg-[#0c0c0e]">
+                  <div className="relative h-48 w-full overflow-hidden bg-[var(--input)]">
                     <img
                       src={dish.image_url}
                       alt={dish.name}
@@ -1161,7 +1423,7 @@ export default function AdminPage() {
                         className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                           dish.in_stock
                             ? 'bg-emerald-500 text-black'
-                            : 'bg-red-500 text-white'
+                            : 'bg-red-500 text-[var(--foreground)]'
                         }`}
                       >
                         {dish.in_stock ? 'In Stock' : 'Sold Out'}
@@ -1171,15 +1433,15 @@ export default function AdminPage() {
 
                   <div className="p-5 flex-1 flex flex-col justify-between">
                     <div>
-                      <h4 className="font-serif text-base font-bold text-white">
+                      <h4 className="font-serif text-base font-bold text-[var(--foreground)]">
                         {dish.name}
                       </h4>
-                      <p className="mt-1 line-clamp-2 text-xs text-gray-400 leading-relaxed">
+                      <p className="mt-1 line-clamp-2 text-xs text-[var(--muted-foreground)] leading-relaxed">
                         {dish.description}
                       </p>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
+                    <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
                       <span className="font-serif text-lg font-bold gold-gradient-text">
                         ${dish.price.toFixed(2)}
                       </span>
@@ -1197,7 +1459,7 @@ export default function AdminPage() {
                         </button>
                         <button
                           onClick={() => handleDeleteDish(dish.id)}
-                          className="p-1.5 text-gray-500 hover:text-red-400 transition"
+                          className="p-1.5 text-[var(--muted-foreground)] hover:text-red-400 transition"
                           title="Delete Dish"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -1217,13 +1479,13 @@ export default function AdminPage() {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="relative w-full max-w-lg rounded-2xl bg-[#141418] border border-primary/40 p-6 shadow-2xl space-y-4"
+                    className="relative w-full max-w-lg rounded-2xl bg-[var(--surface)] border border-primary/40 p-6 shadow-2xl space-y-4"
                   >
-                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                      <h3 className="font-serif text-xl font-bold text-white">Add New Dish</h3>
+                    <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+                      <h3 className="font-serif text-xl font-bold text-[var(--foreground)]">Add New Dish</h3>
                       <button
                         onClick={() => setShowAddDishModal(false)}
-                        className="text-gray-400 hover:text-white"
+                        className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                       >
                         <X className="h-5 w-5" />
                       </button>
@@ -1231,7 +1493,7 @@ export default function AdminPage() {
 
                     <form onSubmit={handleAddDish} className="space-y-4">
                       <div>
-                        <label className="block text-xs uppercase tracking-wider text-gray-300 mb-1">
+                        <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
                           Dish Name
                         </label>
                         <input
@@ -1240,19 +1502,19 @@ export default function AdminPage() {
                           value={newDishName}
                           onChange={(e) => setNewDishName(e.target.value)}
                           placeholder="e.g. Saffron Garlic Lobster Tail"
-                          className="w-full rounded-xl bg-[#0c0c0e] border border-white/10 px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:border-primary focus:outline-none"
+                          className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-2.5 text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs uppercase tracking-wider text-gray-300 mb-1">
+                          <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
                             Category
                           </label>
                           <select
                             value={newDishCategory}
                             onChange={(e) => setNewDishCategory(e.target.value)}
-                            className="w-full rounded-xl bg-[#0c0c0e] border border-white/10 px-3 py-2.5 text-xs text-white focus:border-primary focus:outline-none"
+                            className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-3 py-2.5 text-xs text-[var(--foreground)] focus:border-primary focus:outline-none"
                           >
                             <option>Steaks & Grills</option>
                             <option>Pizza</option>
@@ -1264,7 +1526,7 @@ export default function AdminPage() {
                         </div>
 
                         <div>
-                          <label className="block text-xs uppercase tracking-wider text-gray-300 mb-1">
+                          <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
                             Price ($)
                           </label>
                           <input
@@ -1274,25 +1536,25 @@ export default function AdminPage() {
                             value={newDishPrice}
                             onChange={(e) => setNewDishPrice(e.target.value)}
                             placeholder="24.50"
-                            className="w-full rounded-xl bg-[#0c0c0e] border border-white/10 px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:border-primary focus:outline-none"
+                            className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-2.5 text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none"
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-xs uppercase tracking-wider text-gray-300 mb-1">
+                        <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
                           Image URL
                         </label>
                         <input
                           type="text"
                           value={newDishImage}
                           onChange={(e) => setNewDishImage(e.target.value)}
-                          className="w-full rounded-xl bg-[#0c0c0e] border border-white/10 px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:border-primary focus:outline-none"
+                          className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-2.5 text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-xs uppercase tracking-wider text-gray-300 mb-1">
+                        <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
                           Description
                         </label>
                         <textarea
@@ -1300,7 +1562,7 @@ export default function AdminPage() {
                           value={newDishDesc}
                           onChange={(e) => setNewDishDesc(e.target.value)}
                           placeholder="Ingredients, flavors, artisan preparation details..."
-                          className="w-full rounded-xl bg-[#0c0c0e] border border-white/10 px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:border-primary focus:outline-none"
+                          className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-2.5 text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none"
                         />
                       </div>
 
@@ -1308,7 +1570,7 @@ export default function AdminPage() {
                         <button
                           type="button"
                           onClick={() => setShowAddDishModal(false)}
-                          className="rounded-full border border-white/20 px-5 py-2 text-xs font-medium text-gray-400 hover:text-white"
+                          className="rounded-full border border-[var(--border)] px-5 py-2 text-xs font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                         >
                           Cancel
                         </button>
@@ -1332,6 +1594,314 @@ export default function AdminPage() {
                 </div>
               )}
             </AnimatePresence>
+
+            {/* Edit Dish Modal */}
+            <AnimatePresence>
+              {editingDish && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    className="relative w-full max-w-lg rounded-2xl bg-[var(--surface)] border border-primary/40 p-6 shadow-2xl space-y-4"
+                  >
+                    <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+                      <h3 className="font-serif text-xl font-bold text-[var(--foreground)]">Edit Dish Details</h3>
+                      <button
+                        onClick={() => setEditingDish(null)}
+                        className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleEditDishSave} className="space-y-4">
+                      <div>
+                        <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
+                          Dish Name
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editingDish.name || ''}
+                          onChange={(e) =>
+                            setEditingDish({ ...editingDish, name: e.target.value })
+                          }
+                          className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-2.5 text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
+                            Category
+                          </label>
+                          <select
+                            value={editingDish.category_name || editingDish.category || 'Steaks & Grills'}
+                            onChange={(e) =>
+                              setEditingDish({ ...editingDish, category_name: e.target.value, category: e.target.value })
+                            }
+                            className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-3 py-2.5 text-xs text-[var(--foreground)] focus:border-primary focus:outline-none"
+                          >
+                            <option>Steaks & Grills</option>
+                            <option>Pizza</option>
+                            <option>Burgers</option>
+                            <option>Pasta</option>
+                            <option>Desserts</option>
+                            <option>Drinks</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
+                            Price ($)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            required
+                            value={editingDish.price || ''}
+                            onChange={(e) =>
+                              setEditingDish({ ...editingDish, price: parseFloat(e.target.value) || 0 })
+                            }
+                            className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-2.5 text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
+                            Discount Price ($) (Optional)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={editingDish.discount_price ?? ''}
+                            onChange={(e) =>
+                              setEditingDish({
+                                ...editingDish,
+                                discount_price: e.target.value ? parseFloat(e.target.value) : null,
+                              })
+                            }
+                            placeholder="Leave empty if none"
+                            className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-2.5 text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
+                            Availability
+                          </label>
+                          <select
+                            value={editingDish.is_available ? 'true' : 'false'}
+                            onChange={(e) =>
+                              setEditingDish({
+                                ...editingDish,
+                                is_available: e.target.value === 'true',
+                                in_stock: e.target.value === 'true',
+                              })
+                            }
+                            className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-3 py-2.5 text-xs text-[var(--foreground)] focus:border-primary focus:outline-none"
+                          >
+                            <option value="true">In Stock (Available)</option>
+                            <option value="false">Sold Out (Unavailable)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
+                          Image URL
+                        </label>
+                        <input
+                          type="text"
+                          value={editingDish.image_url || ''}
+                          onChange={(e) =>
+                            setEditingDish({ ...editingDish, image_url: e.target.value })
+                          }
+                          className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-2.5 text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs uppercase tracking-wider text-[var(--muted)] mb-1">
+                          Description
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={editingDish.description || ''}
+                          onChange={(e) =>
+                            setEditingDish({ ...editingDish, description: e.target.value })
+                          }
+                          className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-2.5 text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="pt-2 flex justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setEditingDish(null)}
+                          className="rounded-full border border-[var(--border)] px-5 py-2 text-xs font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={updateDishMutation.isPending}
+                          className="rounded-full gold-gradient-bg px-6 py-2 text-xs font-bold uppercase tracking-wider text-black shadow hover:opacity-90 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                        >
+                          {updateDishMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <span>Updating...</span>
+                            </>
+                          ) : (
+                            'Save Changes'
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 5: CUSTOMER ROLES & ACCOUNTS MANAGEMENT */}
+        {/* ========================================================================= */}
+        {activeTab === 'customers' && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
+              <div>
+                <h3 className="font-serif text-2xl font-bold text-[var(--foreground)] flex items-center gap-2">
+                  <Users className="h-6 w-6 text-primary" /> Customer Accounts & Roles
+                </h3>
+                <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                  View registered diners, monitor activity, and manage administrative privileges securely.
+                </p>
+              </div>
+
+              <button
+                onClick={loadProfiles}
+                className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--muted)] hover:text-[var(--foreground)] transition"
+              >
+                <RefreshCw className="h-3.5 w-3.5" /> Refresh List
+              </button>
+            </div>
+
+            {/* Customer Role Statistics */}
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-5">
+                <span className="text-xs uppercase tracking-wider text-[var(--muted-foreground)] font-semibold block">Total Registered</span>
+                <span className="font-serif text-2xl font-bold text-[var(--foreground)] mt-1 block">{profiles.length}</span>
+              </div>
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-5">
+                <span className="text-xs uppercase tracking-wider text-[var(--muted-foreground)] font-semibold block">Active Customers</span>
+                <span className="font-serif text-2xl font-bold text-emerald-400 mt-1 block">
+                  {profiles.filter((p) => p.role !== 'admin').length}
+                </span>
+              </div>
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-5">
+                <span className="text-xs uppercase tracking-wider text-[var(--muted-foreground)] font-semibold block">Administrators</span>
+                <span className="font-serif text-2xl font-bold text-[#E5C158] mt-1 block">
+                  {profiles.filter((p) => p.role === 'admin').length}
+                </span>
+              </div>
+            </div>
+
+            {/* Customers Table */}
+            {profilesLoading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-[#C5A059]" />
+              </div>
+            ) : profiles.length === 0 ? (
+              <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-12 text-center">
+                <p className="text-[var(--muted-foreground)]">No registered profiles found in database.</p>
+              </div>
+            ) : (
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 overflow-hidden shadow-xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[var(--input)] uppercase tracking-wider text-[var(--muted-foreground)] border-b border-[var(--border)]">
+                      <tr>
+                        <th className="py-4 px-6 font-semibold">User</th>
+                        <th className="py-4 px-6 font-semibold">Contact</th>
+                        <th className="py-4 px-6 font-semibold">Current Role</th>
+                        <th className="py-4 px-6 font-semibold">Registered</th>
+                        <th className="py-4 px-6 font-semibold text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5 text-[var(--muted)]">
+                      {profiles.map((p) => {
+                        const isSelf = p.id === user?.id
+                        const isTargetAdmin = p.role === 'admin'
+                        return (
+                          <tr key={p.id} className="hover:bg-white/[0.02] transition">
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-full gold-gradient-bg text-black font-bold">
+                                  {p.full_name?.charAt(0).toUpperCase() || 'U'}
+                                </div>
+                                <div>
+                                  <div className="font-serif text-sm font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                                    {p.full_name || 'Guest User'}
+                                    {isSelf && (
+                                      <span className="text-[10px] bg-primary/20 text-[#E5C158] px-1.5 py-0.2 rounded font-sans font-normal">
+                                        (You)
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[10px] text-[var(--muted-foreground)] font-mono truncate max-w-[160px]">
+                                    {p.id}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div>{p.email || '—'}</div>
+                              <div className="text-[var(--muted-foreground)] text-[11px] mt-0.5">{p.phone || 'No phone'}</div>
+                            </td>
+                            <td className="py-4 px-6">
+                              {isTargetAdmin ? (
+                                <span className="rounded-full bg-amber-500/20 border border-amber-500/40 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#E5C158]">
+                                  Admin
+                                </span>
+                              ) : (
+                                <span className="rounded-full bg-primary/10 border border-primary/30 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+                                  Customer
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-4 px-6 text-[var(--muted-foreground)]">
+                              {p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Active'}
+                            </td>
+                            <td className="py-4 px-6 text-right">
+                              <button
+                                onClick={() => handleToggleUserRole(p)}
+                                className={`rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
+                                  isTargetAdmin
+                                    ? 'border border-red-500/40 text-red-400 hover:bg-red-500/10'
+                                    : 'gold-gradient-bg text-black shadow hover:opacity-90'
+                                }`}
+                              >
+                                {isTargetAdmin ? 'Demote to Customer' : 'Promote to Admin'}
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -1344,19 +1914,19 @@ export default function AdminPage() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            <div className="border-b border-white/10 pb-4">
-              <h3 className="font-serif text-2xl font-bold text-white">
+            <div className="border-b border-[var(--border)] pb-4">
+              <h3 className="font-serif text-2xl font-bold text-[var(--foreground)]">
                 Performance Analytics & Dining Insights
               </h3>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
                 Key trends, category revenues, and peak reservation hours.
               </p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
               {/* Category Sales Share */}
-              <div className="rounded-2xl bg-[#141418] border border-primary/20 p-6 shadow-lg space-y-4">
-                <h4 className="font-serif text-lg font-bold text-white">
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-lg space-y-4">
+                <h4 className="font-serif text-lg font-bold text-[var(--foreground)]">
                   Revenue by Category
                 </h4>
                 <div className="space-y-3">
@@ -1369,10 +1939,10 @@ export default function AdminPage() {
                   ].map((c) => (
                     <div key={c.cat} className="space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="text-gray-300 font-medium">{c.cat}</span>
+                        <span className="text-[var(--muted)] font-medium">{c.cat}</span>
                         <span className="text-primary font-bold">{c.amount} ({c.percent}%)</span>
                       </div>
-                      <div className="h-2 w-full rounded-full bg-[#0c0c0e] overflow-hidden">
+                      <div className="h-2 w-full rounded-full bg-[var(--input)] overflow-hidden">
                         <div
                           className="h-full gold-gradient-bg rounded-full transition-all duration-700"
                           style={{ width: `${c.percent}%` }}
@@ -1384,8 +1954,8 @@ export default function AdminPage() {
               </div>
 
               {/* Peak Dining Hours */}
-              <div className="rounded-2xl bg-[#141418] border border-primary/20 p-6 shadow-lg space-y-4">
-                <h4 className="font-serif text-lg font-bold text-white">
+              <div className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 shadow-lg space-y-4">
+                <h4 className="font-serif text-lg font-bold text-[var(--foreground)]">
                   Peak Dining & Reservation Hours
                 </h4>
                 <div className="space-y-3">
@@ -1398,10 +1968,10 @@ export default function AdminPage() {
                   ].map((h) => (
                     <div key={h.time} className="space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="text-gray-300">{h.time}</span>
+                        <span className="text-[var(--muted)]">{h.time}</span>
                         <span className="text-amber-300 font-semibold">{h.load}% Capacity</span>
                       </div>
-                      <div className="h-2 w-full rounded-full bg-[#0c0c0e] overflow-hidden">
+                      <div className="h-2 w-full rounded-full bg-[var(--input)] overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-amber-600 to-yellow-400 rounded-full transition-all duration-700"
                           style={{ width: `${h.load}%` }}

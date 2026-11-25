@@ -16,7 +16,7 @@ export interface ChatResponse {
 }
 
 const STRICT_FALLBACK =
-  "Sorry! I don't have this information about AQS Restaurant right now. Please contact our restaurant for assistance."
+  "Sorry! I don't have this information about APNA-DERA Restaurant right now. Please contact our restaurant for assistance."
 
 // Input normalization
 function normalizeText(text: string): string {
@@ -162,7 +162,7 @@ export function processChatQuery(rawQuery: string): ChatResponse {
 
   if (!norm) {
     return {
-      reply: 'Hello! Welcome to AQS Restaurant. How may I assist you today? You can ask about our menu, dish prices, table & chair reservations, opening hours, or delivery.',
+      reply: 'Hello! Welcome to APNA-DERA Restaurant. How may I assist you today? You can ask about our menu, dish prices, table & chair reservations, opening hours, or delivery.',
       intent: 'GREETING',
       suggestedQuestions: ['What food do you have?', 'How can I book a table?', 'What are your opening hours?'],
     }
@@ -228,14 +228,17 @@ export function processChatQuery(rawQuery: string): ChatResponse {
 
   // 3. RESTAURANT ABOUT / STORY
   if (
-    norm.includes('about aqs') ||
+    norm.includes('about apna-dera') ||
+    norm.includes('about apna dera') ||
     norm.includes('about your restaurant') ||
-    norm.includes('what is aqs') ||
+    norm.includes('what is apna-dera') ||
+    norm.includes('what is apna dera') ||
     norm.includes('restaurant story') ||
     norm.includes('who are you') ||
     (norm.includes('tell me about') &&
       (norm.includes('restaurant') ||
-        norm.includes('aqs') ||
+        norm.includes('apna-dera') ||
+        norm.includes('apna dera') ||
         norm.includes('place') ||
         norm.endsWith('about')))
   ) {
@@ -262,7 +265,7 @@ export function processChatQuery(rawQuery: string): ChatResponse {
       .join('\n')
 
     return {
-      reply: `⏰ **AQS Restaurant Opening & Closing Hours**:\n\n${hoursText}\n\nWe welcome you for lunch, evening fine dining, and late-night weekend dining!`,
+      reply: `⏰ **APNA-DERA Restaurant Opening & Closing Hours**:\n\n${hoursText}\n\nWe welcome you for lunch, evening fine dining, and late-night weekend dining!`,
       intent: 'OPENING_HOURS',
       suggestedQuestions: ['Where is your restaurant?', 'How can I book a table?', 'Can I order online?'],
     }
@@ -282,7 +285,7 @@ export function processChatQuery(rawQuery: string): ChatResponse {
     norm.includes('how to reach')
   ) {
     return {
-      reply: `📍 **AQS Restaurant Location & Contact Information**:\n\n• **Address**: ${kb.info.address}\n• **Phone Number**: ${kb.info.phone}\n• **Email Address**: ${kb.info.email}\n• **Tagline**: ${kb.info.tagline}\n\nFeel free to visit us in person or order delivery to your doorstep!`,
+      reply: `📍 **APNA-DERA Restaurant Location & Contact Information**:\n\n• **Address**: ${kb.info.address}\n• **Phone Number**: ${kb.info.phone}\n• **Email Address**: ${kb.info.email}\n• **Tagline**: ${kb.info.tagline}\n\nFeel free to visit us in person or order delivery to your doorstep!`,
       intent: 'LOCATION_CONTACT',
       suggestedQuestions: ['What are your opening hours?', 'What food do you have?', 'How can I book a table?'],
     }
@@ -298,7 +301,7 @@ export function processChatQuery(rawQuery: string): ChatResponse {
     norm.includes('how long does delivery take')
   ) {
     return {
-      reply: `🚚 **AQS Delivery Service**:\n\n• **Delivery Fee**: $${kb.info.delivery_fee.toFixed(2)} flat delivery charge.\n• **Delivery Speed**: ${kb.info.delivery_time}\n• **Payment**: Cash on Delivery upon arrival.\n• **Tracking**: You can track live kitchen and rider milestones at /orders anytime.`,
+      reply: `🚚 **APNA-DERA Delivery Service**:\n\n• **Delivery Fee**: $${kb.info.delivery_fee.toFixed(2)} flat delivery charge.\n• **Delivery Speed**: ${kb.info.delivery_time}\n• **Payment**: Cash on Delivery upon arrival.\n• **Tracking**: You can track live kitchen and rider milestones at /orders anytime.`,
       intent: 'DELIVERY_INFO',
       suggestedQuestions: ['What payment methods do you accept?', 'What food do you have?', 'Can I order online?'],
     }
@@ -329,7 +332,7 @@ export function processChatQuery(rawQuery: string): ChatResponse {
     norm.includes('can i order online')
   ) {
     return {
-      reply: `🛒 **How to Order Online at AQS Restaurant**:\n\n1. Visit our **Menu** page (/menu).\n2. Click the **"+ Add"** button on any dish you desire.\n3. Open your **Cart** (/cart) to review your order.\n4. Proceed to **Checkout** (/checkout), enter your delivery address and phone number.\n5. Select **Cash on Delivery** and place your order!\n6. You will receive a live order tracker (/orders) with instant kitchen updates.`,
+      reply: `🛒 **How to Order Online at APNA-DERA Restaurant**:\n\n1. Visit our **Menu** page (/menu).\n2. Click the **"+ Add"** button on any dish you desire.\n3. Open your **Cart** (/cart) to review your order.\n4. Proceed to **Checkout** (/checkout), enter your delivery address and phone number.\n5. Select **Cash on Delivery** and place your order!\n6. You will receive a live order tracker (/orders) with instant kitchen updates.`,
       intent: 'ORDER_INQUIRY',
       suggestedQuestions: ['What food do you have?', 'What is your delivery fee?', 'What are today’s specials?'],
     }
@@ -350,7 +353,7 @@ export function processChatQuery(rawQuery: string): ChatResponse {
   ) {
     const totalChairs = kb.tables.reduce((acc, t) => acc + t.capacity, 0)
     return {
-      reply: `🪑 **AQS Restaurant Table & Chair Reservation System**:\n\n• **Interactive 2D Floor Plan**: You can reserve a table and choose your exact **individual chairs** at /reservations.\n• **Floor Capacity**: ${kb.tables.length} luxury tables with a total of ${totalChairs} chairs.\n• **4 Atmosphere Zones**:\n  1. **Window Terrace**: Panoramic sunset views (Tables 1-3, 2 & 4 chairs)\n  2. **Main Dining**: Chandelier & wine cellar center (Tables 4-7, 4 & 6 chairs)\n  3. **VIP Lounge**: Royal Velvet booths & 8-seat Presidential table (Tables 8-9)\n  4. **Chef's Garden**: Courtyard fountain & outdoor patio (Tables 10-12, 4 & 8 chairs)\n• **Arrival Slots**: Lunch (12:30 PM - 02:00 PM) & Dinner (07:00 PM - 10:00 PM).\n• **Booking Fee**: Free online booking with instant digital AQS Dining Pass!`,
+      reply: `🪑 **APNA-DERA Restaurant Table & Chair Reservation System**:\n\n• **Interactive 2D Floor Plan**: You can reserve a table and choose your exact **individual chairs** at /reservations.\n• **Floor Capacity**: ${kb.tables.length} luxury tables with a total of ${totalChairs} chairs.\n• **4 Atmosphere Zones**:\n  1. **Window Terrace**: Panoramic sunset views (Tables 1-3, 2 & 4 chairs)\n  2. **Main Dining**: Chandelier & wine cellar center (Tables 4-7, 4 & 6 chairs)\n  3. **VIP Lounge**: Royal Velvet booths & 8-seat Presidential table (Tables 8-9)\n  4. **Chef's Garden**: Courtyard fountain & outdoor patio (Tables 10-12, 4 & 8 chairs)\n• **Arrival Slots**: Lunch (12:30 PM - 02:00 PM) & Dinner (07:00 PM - 10:00 PM).\n• **Booking Fee**: Free online booking with instant digital APNA-DERA Dining Pass!`,
       intent: 'RESERVATION_INQUIRY',
       suggestedQuestions: ['What are your opening hours?', 'What food do you have?', 'Where is your restaurant?'],
     }
@@ -376,7 +379,7 @@ export function processChatQuery(rawQuery: string): ChatResponse {
       .join('\n\n')
 
     return {
-      reply: `🔥 **Today's Chef Specials & Discounted Dishes at AQS**:\n\n${list}\n\nYou can order these specials right now from our Menu page (/menu)!`,
+      reply: `🔥 **Today's Chef Specials & Discounted Dishes at APNA-DERA**:\n\n${list}\n\nYou can order these specials right now from our Menu page (/menu)!`,
       intent: 'SPECIALS_DEALS',
       suggestedQuestions: ['What is the price of Flame-Seared Prime Ribeye Steak?', 'What food do you have?', 'Can I order online?'],
     }
@@ -397,7 +400,7 @@ export function processChatQuery(rawQuery: string): ChatResponse {
         .join('\n\n')
 
       return {
-        reply: `🍽️ **${matchedCategory} at AQS Restaurant**:\n\n${itemsList}\n\nYou can add any of these to your cart on /menu.`,
+        reply: `🍽️ **${matchedCategory} at APNA-DERA Restaurant**:\n\n${itemsList}\n\nYou can add any of these to your cart on /menu.`,
         intent: 'CATEGORY_MENU',
         matchedEntities: [{ type: 'category', name: matchedCategory }],
         suggestedQuestions: ['What food do you have?', 'What are today’s specials?', 'How can I book a table?'],
@@ -423,7 +426,7 @@ export function processChatQuery(rawQuery: string): ChatResponse {
       .join('\n')
 
     return {
-      reply: `📖 **AQS Restaurant Menu Overview**:\n\nWe feature 6 handcrafted gourmet categories:\n\n${catList}\n\n**Popular Signature Dishes**:\n• Flame-Seared Prime Ribeye Steak ($29.50 sale)\n• Prime Wagyu Brioche Burger ($16.99)\n• Artisan Truffle & Wild Mushroom Pizza ($15.99 sale)\n• Handcrafted Truffle Fettuccine Alfredo ($17.00)\n• Molten Valrhona Lava Cake ($9.50)\n\nAsk me about any specific dish or visit /menu to explore all ${kb.menuItems.length} dishes!`,
+      reply: `📖 **APNA-DERA Restaurant Menu Overview**:\n\nWe feature 6 handcrafted gourmet categories:\n\n${catList}\n\n**Popular Signature Dishes**:\n• Flame-Seared Prime Ribeye Steak ($29.50 sale)\n• Prime Wagyu Brioche Burger ($16.99)\n• Artisan Truffle & Wild Mushroom Pizza ($15.99 sale)\n• Handcrafted Truffle Fettuccine Alfredo ($17.00)\n• Molten Valrhona Lava Cake ($9.50)\n\nAsk me about any specific dish or visit /menu to explore all ${kb.menuItems.length} dishes!`,
       intent: 'MENU_OVERVIEW',
       suggestedQuestions: [
         'What steaks do you have?',

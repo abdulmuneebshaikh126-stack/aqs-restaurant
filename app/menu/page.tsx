@@ -1,9 +1,10 @@
 'use client'
-import { useState } from 'react'
+
+import { useState, useMemo } from 'react'
 import FoodCard from '@/components/menu/FoodCard'
 import { MenuItem } from '@/types'
 import { useMenuItemsQuery, useCategoriesQuery } from '@/hooks/queries/useMenuQuery'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Search, X } from 'lucide-react'
 
 const menuCategories = [
   'All',
@@ -116,26 +117,61 @@ const demoItems: (MenuItem & { categoryName: string })[] = [
 
 export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState('All')
+  const [searchQuery, setSearchQuery] = useState('')
   const { data: items = demoItems, isLoading } = useMenuItemsQuery(demoItems)
   const { data: categories = menuCategories } = useCategoriesQuery(menuCategories)
 
-  const filteredItems = activeCategory === 'All'
-    ? items
-    : items.filter((i) => i.categoryName === activeCategory)
+  const filteredItems = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    return items.filter((item) => {
+      const matchCategory =
+        activeCategory === 'All' ||
+        item.categoryName === activeCategory ||
+        item.category_name === activeCategory
+
+      const matchSearch =
+        !query ||
+        item.name.toLowerCase().includes(query) ||
+        (item.description && item.description.toLowerCase().includes(query)) ||
+        (item.categoryName && item.categoryName.toLowerCase().includes(query))
+
+      return matchCategory && matchSearch
+    })
+  }, [items, activeCategory, searchQuery])
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 md:px-8">
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto mb-10">
         <span className="text-xs uppercase tracking-[0.3em] text-[#C5A059] font-semibold">
-          AQS Culinary Collection
+          APNA-DERA Culinary Collection
         </span>
-        <h1 className="mt-2 font-serif text-4xl font-bold text-white md:text-5xl">
+        <h1 className="mt-2 font-serif text-4xl font-bold text-[var(--foreground)] md:text-5xl">
           Our Menu
         </h1>
-        <p className="mt-3 text-gray-400">
+        <p className="mt-3 text-[var(--foreground)]/65">
           Fresh, delicious, and passionately crafted with the finest ingredients.
         </p>
+
+        {/* Dynamic Search Bar */}
+        <div className="mt-8 relative max-w-md mx-auto">
+          <Search className="absolute left-4 top-3.5 h-4 w-4 text-[var(--foreground)]/65" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by dish name or ingredient..."
+            className="w-full rounded-full bg-[var(--secondary)] border border-primary/20 pl-11 pr-10 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-primary focus:outline-none transition shadow-inner"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3.5 top-3.5 text-[var(--foreground)]/65 hover:text-[var(--foreground)]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Category Filter Tabs */}
@@ -149,7 +185,7 @@ export default function MenuPage() {
               className={`rounded-full px-5 py-2 text-xs md:text-sm font-semibold tracking-wider uppercase transition-all duration-300 ${
                 isActive
                   ? 'gold-gradient-bg text-black shadow-lg scale-105'
-                  : 'bg-[#141418] border border-primary/20 text-gray-300 hover:text-white hover:border-primary/50'
+                  : 'bg-[var(--secondary)] border border-primary/20 text-[var(--foreground)]/80 hover:text-[var(--foreground)] hover:border-primary/50'
               }`}
             >
               {cat}
@@ -162,7 +198,21 @@ export default function MenuPage() {
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-[#C5A059]" />
-          <p className="text-sm text-gray-400">Loading delicacies from AQS Kitchen...</p>
+          <p className="text-sm text-[var(--foreground)]/65">Loading delicacies from APNA-DERA Kitchen...</p>
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="rounded-2xl bg-[var(--secondary)] border border-[var(--foreground)]/10 p-12 text-center max-w-md mx-auto">
+          <p className="font-serif text-lg text-[var(--foreground)]/80">No dishes match your search.</p>
+          <p className="text-xs text-[var(--foreground)]/50 mt-1">Try another category or search term.</p>
+          <button
+            onClick={() => {
+              setActiveCategory('All')
+              setSearchQuery('')
+            }}
+            className="mt-4 rounded-full gold-gradient-bg px-5 py-2 text-xs font-bold uppercase tracking-wider text-black"
+          >
+            Reset Filters
+          </button>
         </div>
       ) : (
         /* Food Cards Grid */
@@ -175,3 +225,4 @@ export default function MenuPage() {
     </div>
   )
 }
+

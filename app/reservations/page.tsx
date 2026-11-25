@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { reservationSchema, ReservationInput } from '@/lib/validations/schemas'
 import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/lib/auth/AuthContext'
 import { RestaurantTable } from '@/types'
 import TableFloorPlan, { RESTAURANT_TABLES } from '@/components/reservations/TableFloorPlan'
 import { useCreateReservationMutation } from '@/hooks/queries/useReservationsQuery'
@@ -37,6 +38,7 @@ export default function ReservationsPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1)
 
   const supabase = createClient()
+  const { user, profile } = useAuth()
   const createReservationMutation = useCreateReservationMutation()
 
   // Get tomorrow's date formatted as YYYY-MM-DD for default
@@ -57,10 +59,18 @@ export default function ReservationsPage() {
       reservation_time: '08:00 PM',
       guests: 2,
       customer_name: '',
+      email: '',
       phone: '',
       special_requests: '',
     },
   })
+
+  // Autofill user details
+  useEffect(() => {
+    if (profile?.full_name) setValue('customer_name', profile.full_name)
+    if (user?.email) setValue('email', user.email)
+    if (profile?.phone) setValue('phone', profile.phone)
+  }, [profile, user, setValue])
 
   const watchGuests = watch('guests') || 2
   const watchDate = watch('reservation_date')
@@ -88,7 +98,9 @@ export default function ReservationsPage() {
 
     const reservationPayload = {
       id: `res-${Date.now().toString(36)}`,
+      user_id: user?.id || null,
       customer_name: data.customer_name,
+      email: data.email,
       phone: data.phone,
       reservation_date: data.reservation_date,
       reservation_time: data.reservation_time,
@@ -107,7 +119,9 @@ export default function ReservationsPage() {
     try {
       // 1. Save to Supabase using mutation
       await createReservationMutation.mutateAsync({
+        user_id: reservationPayload.user_id,
         customer_name: reservationPayload.customer_name,
+        email: reservationPayload.email,
         phone: reservationPayload.phone,
         reservation_date: reservationPayload.reservation_date,
         reservation_time: reservationPayload.reservation_time,
@@ -122,6 +136,11 @@ export default function ReservationsPage() {
       })
     } catch (e: any) {
       console.warn('Supabase booking notice:', e?.message)
+      if (e?.message && e.message.includes('already booked')) {
+        toast.error('Booking Conflict', { description: e.message })
+        setLoading(false)
+        return
+      }
     }
 
     // 2. Persist in localStorage for instant Admin Panel viewing
@@ -148,7 +167,7 @@ export default function ReservationsPage() {
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ type: 'spring', damping: 20 }}
-          className="relative overflow-hidden rounded-3xl bg-[#141418] border border-primary/40 p-8 md:p-12 text-center shadow-2xl"
+          className="relative overflow-hidden rounded-3xl bg-[var(--surface)] border border-primary/40 p-8 md:p-12 text-center shadow-2xl"
         >
           {/* Glowing background halo */}
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 h-48 w-48 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
@@ -166,24 +185,24 @@ export default function ReservationsPage() {
           <span className="text-xs uppercase tracking-[0.3em] text-[#C5A059] font-bold">
             Reservation Confirmed
           </span>
-          <h1 className="mt-2 font-serif text-3xl font-bold text-white md:text-5xl">
+          <h1 className="mt-2 font-serif text-3xl font-bold text-[var(--foreground)] md:text-5xl">
             Table Reserved for {successData.customer_name}
           </h1>
-          <p className="mt-3 text-sm md:text-base text-gray-400 max-w-md mx-auto">
-            Your table and individual chairs have been secured at AQS Restaurant. An SMS confirmation will be delivered to <span className="text-white font-medium">{successData.phone}</span>.
+          <p className="mt-3 text-sm md:text-base text-[var(--muted-foreground)] max-w-md mx-auto">
+            Your table and individual chairs have been secured at APNA-DERA Restaurant. An SMS confirmation will be delivered to <span className="text-[var(--foreground)] font-medium">{successData.phone}</span>.
           </p>
 
           {/* Luxury Table & Seating Pass */}
-          <div className="mt-8 rounded-2xl bg-[#0c0c0e] border border-primary/30 p-6 text-left shadow-lg">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="mt-8 rounded-2xl bg-[var(--input)] border border-primary/30 p-6 text-left shadow-lg">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
               <div>
                 <span className="text-[10px] uppercase tracking-widest text-[#C5A059] font-bold">
-                  AQS Dining Pass
+                  APNA-DERA Dining Pass
                 </span>
-                <h3 className="font-serif text-xl font-bold text-white mt-0.5">
+                <h3 className="font-serif text-xl font-bold text-[var(--foreground)] mt-0.5">
                   Table {successData.table_number < 10 ? `0${successData.table_number}` : successData.table_number} — {successData.table_name}
                 </h3>
-                <p className="text-xs text-gray-400 mt-0.5">{successData.zone}</p>
+                <p className="text-xs text-[var(--muted-foreground)] mt-0.5">{successData.zone}</p>
               </div>
               <div className="rounded-xl gold-gradient-bg px-3 py-1.5 text-center text-black">
                 <div className="text-[9px] uppercase tracking-wider font-extrabold">Chairs</div>
@@ -195,28 +214,28 @@ export default function ReservationsPage() {
 
             <div className="mt-4 grid grid-cols-2 gap-4 text-xs md:text-sm">
               <div>
-                <span className="text-gray-500 uppercase tracking-wider text-[10px] block">Date</span>
-                <span className="font-medium text-white">{successData.reservation_date}</span>
+                <span className="text-[var(--muted-foreground)] uppercase tracking-wider text-[10px] block">Date</span>
+                <span className="font-medium text-[var(--foreground)]">{successData.reservation_date}</span>
               </div>
               <div>
-                <span className="text-gray-500 uppercase tracking-wider text-[10px] block">Time Slot</span>
-                <span className="font-medium text-white">{successData.reservation_time}</span>
+                <span className="text-[var(--muted-foreground)] uppercase tracking-wider text-[10px] block">Time Slot</span>
+                <span className="font-medium text-[var(--foreground)]">{successData.reservation_time}</span>
               </div>
               <div>
-                <span className="text-gray-500 uppercase tracking-wider text-[10px] block">Selected Chairs</span>
+                <span className="text-[var(--muted-foreground)] uppercase tracking-wider text-[10px] block">Selected Chairs</span>
                 <span className="font-medium text-[#E5C158]">
                   Seats #{successData.selected_chairs?.join(', #')}
                 </span>
               </div>
               <div>
-                <span className="text-gray-500 uppercase tracking-wider text-[10px] block">Booking Ref</span>
-                <span className="font-mono text-gray-300 uppercase">{successData.id}</span>
+                <span className="text-[var(--muted-foreground)] uppercase tracking-wider text-[10px] block">Booking Ref</span>
+                <span className="font-mono text-[var(--muted)] uppercase">{successData.id}</span>
               </div>
             </div>
 
             {successData.special_requests && (
-              <div className="mt-4 pt-3 border-t border-white/5 text-xs text-gray-400">
-                <span className="text-gray-500 font-medium">Special Requests: </span>
+              <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] text-xs text-[var(--muted-foreground)]">
+                <span className="text-[var(--muted-foreground)] font-medium">Special Requests: </span>
                 {successData.special_requests}
               </div>
             )}
@@ -238,6 +257,14 @@ export default function ReservationsPage() {
             >
               Explore Pre-order Menu
             </a>
+            {user && (
+              <a
+                href="/account"
+                className="rounded-full border border-amber-500/50 bg-amber-500/10 px-8 py-3.5 text-sm font-semibold text-[#E5C158] hover:bg-amber-500/20 transition shadow"
+              >
+                View in My Account
+              </a>
+            )}
           </div>
         </motion.div>
       </div>
@@ -251,10 +278,10 @@ export default function ReservationsPage() {
         <span className="text-xs uppercase tracking-[0.3em] text-[#C5A059] font-semibold flex items-center justify-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5" /> Luxury Table & Seating Reservation
         </span>
-        <h1 className="mt-2 font-serif text-3xl font-bold text-white md:text-5xl">
+        <h1 className="mt-2 font-serif text-3xl font-bold text-[var(--foreground)] md:text-5xl">
           Reserve Your Table & Chairs
         </h1>
-        <p className="mt-3 text-sm md:text-base text-gray-400 leading-relaxed font-light">
+        <p className="mt-3 text-sm md:text-base text-[var(--muted-foreground)] leading-relaxed font-light">
           Choose your dining date, select your table and exact chairs directly on our interactive floor plan, and secure your dining experience in seconds.
         </p>
       </div>
@@ -289,15 +316,15 @@ export default function ReservationsPage() {
                     isCurrent
                       ? 'gold-gradient-bg text-black ring-4 ring-primary/20 scale-110'
                       : isPassed
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-[#18181e] border border-white/10 text-gray-400'
+                      ? 'bg-emerald-500 text-[var(--foreground)]'
+                      : 'bg-[var(--card)] border border-[var(--border)] text-[var(--muted-foreground)]'
                   }`}
                 >
                   {isPassed ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
                 </div>
                 <span
                   className={`text-xs font-semibold uppercase tracking-wider transition ${
-                    isCurrent ? 'text-[#E5C158]' : 'text-gray-400'
+                    isCurrent ? 'text-[#E5C158]' : 'text-[var(--muted-foreground)]'
                   }`}
                 >
                   {s.label}
@@ -316,13 +343,13 @@ export default function ReservationsPage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="mx-auto max-w-3xl rounded-2xl bg-[#141418] border border-primary/20 p-6 md:p-10 shadow-xl space-y-8"
+            className="mx-auto max-w-3xl rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 md:p-10 shadow-xl space-y-8"
           >
             <div>
-              <h2 className="font-serif text-2xl font-bold text-white flex items-center gap-2">
+              <h2 className="font-serif text-2xl font-bold text-[var(--foreground)] flex items-center gap-2">
                 <Calendar className="h-6 w-6 text-primary" /> Step 1: When are you dining?
               </h2>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-[var(--muted-foreground)] mt-1">
                 Select your preferred date, party size, and arrival time slot.
               </p>
             </div>
@@ -330,14 +357,14 @@ export default function ReservationsPage() {
             <div className="grid gap-6 md:grid-cols-2">
               {/* Date Input */}
               <div>
-                <label className="mb-2 block text-xs uppercase tracking-wider text-gray-300 font-semibold">
+                <label className="mb-2 block text-xs uppercase tracking-wider text-[var(--muted)] font-semibold">
                   Reservation Date
                 </label>
                 <input
                   type="date"
                   min={new Date().toISOString().split('T')[0]}
                   {...register('reservation_date')}
-                  className="w-full rounded-xl bg-[#0c0c0e] border border-white/10 px-4 py-3.5 text-white placeholder-gray-500 focus:border-primary focus:outline-none transition [color-scheme:dark]"
+                  className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-3.5 text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none transition [color-scheme:inherit]"
                 />
                 {errors.reservation_date && (
                   <p className="mt-1 text-xs text-red-400">{errors.reservation_date.message}</p>
@@ -346,7 +373,7 @@ export default function ReservationsPage() {
 
               {/* Guests Count Selector */}
               <div>
-                <label className="mb-2 block text-xs uppercase tracking-wider text-gray-300 font-semibold">
+                <label className="mb-2 block text-xs uppercase tracking-wider text-[var(--muted)] font-semibold">
                   Party Size (Guests)
                 </label>
                 <div className="flex items-center gap-2">
@@ -358,7 +385,7 @@ export default function ReservationsPage() {
                       className={`flex-1 rounded-xl py-3 font-semibold text-sm transition-all duration-200 ${
                         watchGuests === g
                           ? 'gold-gradient-bg text-black shadow-md scale-105'
-                          : 'bg-[#0c0c0e] border border-white/10 text-gray-300 hover:border-primary/40'
+                          : 'bg-[var(--input)] border border-[var(--border)] text-[var(--muted)] hover:border-primary/40'
                       }`}
                     >
                       {g} Guests
@@ -370,7 +397,7 @@ export default function ReservationsPage() {
 
             {/* Time Slot Buttons */}
             <div>
-              <label className="mb-3 block text-xs uppercase tracking-wider text-gray-300 font-semibold flex items-center gap-1.5">
+              <label className="mb-3 block text-xs uppercase tracking-wider text-[var(--muted)] font-semibold flex items-center gap-1.5">
                 <Clock className="h-4 w-4 text-primary" /> Available Arrival Slots
               </label>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
@@ -384,7 +411,7 @@ export default function ReservationsPage() {
                       className={`rounded-xl py-2.5 px-3 text-xs font-semibold tracking-wider transition-all duration-200 ${
                         isSelected
                           ? 'gold-gradient-bg text-black shadow-md scale-105 font-bold'
-                          : 'bg-[#0c0c0e] border border-white/10 text-gray-300 hover:border-primary/50 hover:text-white'
+                          : 'bg-[var(--input)] border border-[var(--border)] text-[var(--muted)] hover:border-primary/50 hover:text-[var(--foreground)]'
                       }`}
                     >
                       {slot}
@@ -413,14 +440,14 @@ export default function ReservationsPage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="rounded-2xl bg-[#141418] border border-primary/20 p-6 md:p-8 shadow-xl space-y-6"
+            className="rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 md:p-8 shadow-xl space-y-6"
           >
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/10 pb-5">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[var(--border)] pb-5">
               <div>
-                <h2 className="font-serif text-2xl font-bold text-white flex items-center gap-2">
+                <h2 className="font-serif text-2xl font-bold text-[var(--foreground)] flex items-center gap-2">
                   <Users className="h-6 w-6 text-primary" /> Step 2: Interactive Table & Chairs Floor Plan
                 </h2>
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-[var(--muted-foreground)] mt-1">
                   Click on any table or its individual chairs to pick your exact seating.
                 </p>
               </div>
@@ -429,7 +456,7 @@ export default function ReservationsPage() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 text-xs font-medium text-gray-300 hover:border-white transition"
+                  className="flex items-center gap-1.5 rounded-full border border-[var(--border)] px-4 py-2 text-xs font-medium text-[var(--muted)] hover:border-white transition"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" /> Back
                 </button>
@@ -453,11 +480,11 @@ export default function ReservationsPage() {
             />
 
             {/* Bottom Nav Action */}
-            <div className="pt-6 border-t border-white/10 flex items-center justify-between">
+            <div className="pt-6 border-t border-[var(--border)] flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="text-xs uppercase tracking-wider text-gray-400 hover:text-white flex items-center gap-1.5"
+                className="text-xs uppercase tracking-wider text-[var(--muted-foreground)] hover:text-[var(--foreground)] flex items-center gap-1.5"
               >
                 <ArrowLeft className="h-3.5 w-3.5" /> Change Date & Time
               </button>
@@ -480,35 +507,35 @@ export default function ReservationsPage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="mx-auto max-w-3xl rounded-2xl bg-[#141418] border border-primary/20 p-6 md:p-10 shadow-xl space-y-8"
+            className="mx-auto max-w-3xl rounded-2xl bg-[var(--surface)] border border-primary/20 p-6 md:p-10 shadow-xl space-y-8"
           >
             <div>
-              <h2 className="font-serif text-2xl font-bold text-white flex items-center gap-2">
+              <h2 className="font-serif text-2xl font-bold text-[var(--foreground)] flex items-center gap-2">
                 <Crown className="h-6 w-6 text-primary" /> Step 3: Complete Your Reservation
               </h2>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-[var(--muted-foreground)] mt-1">
                 Enter your details to finalize your table and chairs booking.
               </p>
             </div>
 
             {/* Reservation Summary Snapshot */}
             {selectedTable && (
-              <div className="rounded-xl bg-[#0c0c0e] border border-primary/30 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="rounded-xl bg-[var(--input)] border border-primary/30 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <span className="text-[10px] uppercase tracking-widest text-[#C5A059] font-bold">
                     Selected Table
                   </span>
-                  <div className="font-serif text-lg font-bold text-white">
+                  <div className="font-serif text-lg font-bold text-[var(--foreground)]">
                     Table {selectedTable.number} — {selectedTable.name}
                   </div>
-                  <div className="text-xs text-gray-400 mt-0.5">
+                  <div className="text-xs text-[var(--muted-foreground)] mt-0.5">
                     {selectedTable.zone} • {watchDate} at {watchTime}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <div className="rounded-xl bg-primary/10 border border-primary/30 px-3.5 py-1.5 text-center">
-                    <span className="text-[10px] uppercase text-gray-400 block font-semibold">Chairs</span>
+                    <span className="text-[10px] uppercase text-[var(--muted-foreground)] block font-semibold">Chairs</span>
                     <span className="font-serif text-base font-bold gold-gradient-text">
                       {selectedChairs.length} Reserved
                     </span>
@@ -527,52 +554,69 @@ export default function ReservationsPage() {
             {/* Contact Inputs */}
             <div className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-xs uppercase tracking-wider text-gray-300 font-semibold">
+                <label className="mb-1.5 block text-xs uppercase tracking-wider text-[var(--muted)] font-semibold">
                   Full Name
                 </label>
                 <input
                   {...register('customer_name')}
                   placeholder="e.g. Alexander Vance"
-                  className="w-full rounded-xl bg-[#0c0c0e] border border-white/10 px-4 py-3.5 text-white placeholder-gray-500 focus:border-primary focus:outline-none transition"
+                  className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-3.5 text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none transition"
                 />
                 {errors.customer_name && (
                   <p className="mt-1 text-xs text-red-400">{errors.customer_name.message}</p>
                 )}
               </div>
 
-              <div>
-                <label className="mb-1.5 block text-xs uppercase tracking-wider text-gray-300 font-semibold">
-                  Phone Number
-                </label>
-                <input
-                  {...register('phone')}
-                  placeholder="e.g. +92 300 1234567"
-                  className="w-full rounded-xl bg-[#0c0c0e] border border-white/10 px-4 py-3.5 text-white placeholder-gray-500 focus:border-primary focus:outline-none transition"
-                />
-                {errors.phone && (
-                  <p className="mt-1 text-xs text-red-400">{errors.phone.message}</p>
-                )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1.5 block text-xs uppercase tracking-wider text-[var(--muted)] font-semibold">
+                    Phone Number
+                  </label>
+                  <input
+                    {...register('phone')}
+                    placeholder="e.g. +92 300 1234567"
+                    className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-3.5 text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none transition"
+                  />
+                  {errors.phone && (
+                    <p className="mt-1 text-xs text-red-400">{errors.phone.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs uppercase tracking-wider text-[var(--muted)] font-semibold">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    {...register('email')}
+                    placeholder="e.g. you@example.com"
+                    className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-3.5 text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none transition"
+                  />
+                  {errors.email && (
+                    <p className="mt-1 text-xs text-red-400">{errors.email.message}</p>
+                  )}
+                </div>
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs uppercase tracking-wider text-gray-300 font-semibold">
+                <label className="mb-1.5 block text-xs uppercase tracking-wider text-[var(--muted)] font-semibold">
                   Special Requests (Optional)
                 </label>
                 <textarea
                   {...register('special_requests')}
                   rows={3}
                   placeholder="Anniversary celebration, window view, dietary allergies, champagne on arrival..."
-                  className="w-full rounded-xl bg-[#0c0c0e] border border-white/10 px-4 py-3.5 text-white placeholder-gray-500 focus:border-primary focus:outline-none transition"
+                  className="w-full rounded-xl bg-[var(--input)] border border-[var(--border)] px-4 py-3.5 text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-primary focus:outline-none transition"
                 />
               </div>
             </div>
 
             {/* Actions */}
-            <div className="pt-4 flex items-center justify-between border-t border-white/10">
+            <div className="pt-4 flex items-center justify-between border-t border-[var(--border)]">
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-gray-400 hover:text-white"
+                className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               >
                 <ArrowLeft className="h-3.5 w-3.5" /> Back to Floor Plan
               </button>

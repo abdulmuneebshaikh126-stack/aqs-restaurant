@@ -228,7 +228,7 @@ export default function TableFloorPlan({
                 className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-300 ${
                   isActive
                     ? 'gold-gradient-bg text-black shadow-lg scale-105'
-                    : 'bg-[#141418] border border-primary/20 text-gray-300 hover:text-white hover:border-primary/50'
+                    : 'bg-[var(--surface)] border border-primary/20 text-[var(--muted)] hover:text-[var(--foreground)] hover:border-primary/50'
                 }`}
               >
                 {zone === 'Window Terrace' && <Eye className="h-3.5 w-3.5" />}
@@ -243,7 +243,7 @@ export default function TableFloorPlan({
 
         {/* Chair Capacity Quick Filter */}
         <div className="flex items-center gap-2 self-start lg:self-auto">
-          <span className="text-xs uppercase tracking-wider text-gray-400 font-medium flex items-center gap-1">
+          <span className="text-xs uppercase tracking-wider text-[var(--muted-foreground)] font-medium flex items-center gap-1">
             <SlidersHorizontal className="h-3 w-3" /> Chairs:
           </span>
           {[
@@ -259,7 +259,7 @@ export default function TableFloorPlan({
               className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
                 filterCapacity === c.value
                   ? 'bg-primary/20 text-[#E5C158] border border-primary/50'
-                  : 'bg-[#141418] border border-white/10 text-gray-400 hover:text-white'
+                  : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
               }`}
             >
               {c.label}
@@ -270,13 +270,13 @@ export default function TableFloorPlan({
 
       {/* Legend */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#121216] border border-primary/20 px-4 py-2.5 text-xs">
-        <div className="flex flex-wrap items-center gap-4 text-gray-400">
+        <div className="flex flex-wrap items-center gap-4 text-[var(--muted-foreground)]">
           <div className="flex items-center gap-1.5">
             <span className="h-3 w-3 rounded-full gold-gradient-bg shadow-sm" />
-            <span className="text-white font-medium">Selected Chair / Table</span>
+            <span className="text-[var(--foreground)] font-medium">Selected Chair / Table</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full bg-[#1a1a20] border border-primary/40" />
+            <span className="h-3 w-3 rounded-full bg-[var(--card)] border border-primary/40" />
             <span>Available Table</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -308,15 +308,15 @@ export default function TableFloorPlan({
                 isSelected
                   ? 'bg-gradient-to-b from-[#201b12] to-[#141418] border-primary shadow-xl shadow-primary/10 ring-1 ring-primary'
                   : isReserved
-                  ? 'bg-[#121010] border-red-950/40 opacity-70 cursor-not-allowed'
-                  : 'bg-[#141418] border-primary/20 hover:border-primary/60 hover:shadow-lg'
+                  ? 'bg-[var(--surface)] border-red-950/40 opacity-70 cursor-not-allowed'
+                  : 'bg-[var(--surface)] border-primary/20 hover:border-primary/60 hover:shadow-lg'
               }`}
             >
               {/* Header Info */}
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-serif text-lg font-bold text-white group-hover:text-primary transition">
+                    <span className="font-serif text-lg font-bold text-[var(--foreground)] group-hover:text-primary transition">
                       Table {tbl.number < 10 ? `0${tbl.number}` : tbl.number}
                     </span>
                     {tbl.priceTier === 'vip' && (
@@ -325,7 +325,7 @@ export default function TableFloorPlan({
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5">{tbl.name}</p>
+                  <p className="text-xs text-[var(--muted-foreground)] mt-0.5">{tbl.name}</p>
                 </div>
 
                 <div className="text-right">
@@ -347,7 +347,7 @@ export default function TableFloorPlan({
               </div>
 
               {/* The Core Visualizer: Real Table & Animated Chairs */}
-              <div className="my-4 flex items-center justify-center min-h-[170px] bg-[#0c0c0e]/60 rounded-xl border border-white/5 relative">
+              <div className="my-4 flex items-center justify-center min-h-[170px] bg-[var(--input)]/60 rounded-xl border border-[var(--border-subtle)] relative">
                 <ChairVisualizer
                   tableNumber={tbl.number}
                   tableName={tbl.name}
@@ -367,15 +367,15 @@ export default function TableFloorPlan({
                   {tbl.features?.slice(0, 2).map((feat) => (
                     <span
                       key={feat}
-                      className="rounded-md bg-white/5 px-2 py-0.5 text-[10px] text-gray-400"
+                      className="rounded-md bg-white/5 px-2 py-0.5 text-[10px] text-[var(--muted-foreground)]"
                     >
                       {feat}
                     </span>
                   ))}
                 </div>
 
-                <div className="flex items-center justify-between border-t border-white/5 pt-3 text-xs">
-                  <span className="text-gray-400 flex items-center gap-1">
+                <div className="flex items-center justify-between border-t border-[var(--border-subtle)] pt-3 text-xs">
+                  <span className="text-[var(--muted-foreground)] flex items-center gap-1">
                     <MapPin className="h-3 w-3 text-primary" /> {tbl.zone}
                   </span>
                   <button
@@ -407,21 +407,21 @@ export default function TableFloorPlan({
             exit={{ opacity: 0, y: 20 }}
             className="rounded-2xl gold-gradient-bg p-[1px] shadow-2xl"
           >
-            <div className="rounded-2xl bg-[#141418] p-5 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="rounded-2xl bg-[var(--surface)] p-5 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl gold-gradient-bg text-black font-serif font-bold text-xl shadow-lg">
                   T-{selectedTable.number}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h4 className="font-serif text-lg md:text-xl font-bold text-white">
+                    <h4 className="font-serif text-lg md:text-xl font-bold text-[var(--foreground)]">
                       {selectedTable.name}
                     </h4>
                     <span className="rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 text-[10px] uppercase font-bold">
                       Confirmed Choice
                     </span>
                   </div>
-                  <p className="text-xs md:text-sm text-gray-400 mt-1">
+                  <p className="text-xs md:text-sm text-[var(--muted-foreground)] mt-1">
                     {selectedTable.zone} • {selectedTable.capacity} Total Chairs Available
                   </p>
                 </div>
@@ -429,8 +429,8 @@ export default function TableFloorPlan({
 
               {/* Chairs Detail & Action */}
               <div className="flex flex-wrap items-center gap-3">
-                <div className="rounded-xl bg-[#0c0c0e] border border-primary/30 px-4 py-2 text-center">
-                  <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
+                <div className="rounded-xl bg-[var(--input)] border border-primary/30 px-4 py-2 text-center">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] font-semibold">
                     Reserved Chairs
                   </div>
                   <div className="font-serif text-lg font-bold gold-gradient-text">

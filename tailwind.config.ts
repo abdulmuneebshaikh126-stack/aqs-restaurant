@@ -9,16 +9,16 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#C5A059',
+          DEFAULT: 'var(--primary)',
           hover: '#B38E46',
           light: '#E8CE87',
           dark: '#8F6E2A',
         },
-        secondary: '#121214',
-        background: '#0C0C0E',
-        surface: '#141418',
-        card: '#1A1A20',
-        text: '#F5F5F7',
+        secondary: 'var(--secondary)',
+        background: 'var(--background)',
+        surface: 'var(--surface)',
+        card: 'var(--card)',
+        text: 'var(--foreground)',
         gold: {
           DEFAULT: '#C5A059',
           50: '#FBF8F0',

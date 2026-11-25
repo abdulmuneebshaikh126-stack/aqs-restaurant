@@ -1,8 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { processChatQuery } from '@/lib/chatbot/nlpEngine'
 import { getKnowledgeBase, syncKnowledgeBaseFromAdmin } from '@/lib/chatbot/knowledgeBase'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
+
+let lastMenuSync = 0
+
+async function syncMenuFromSupabaseIfNeeded() {
+  const now = Date.now()
+  if (now - lastMenuSync < 60000) return // 60s cache
+  lastMenuSync = now
+
+  try {
+    const supabase = await createServerSupabaseClient()
+    const { data: items, error } = await supabase
+      .from('menu_items')
+      .select('id, name, category_name, price, discount_price, description, image_url, is_available, is_featured')
+
+    if (!error && items && items.length > 0) {
+      syncKnowledgeBaseFromAdmin(items)
+    }
+  } catch (err) {
+    // If Supabase table is not yet initialized, knowledge base fallback continues smoothly
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,12 +47,12 @@ export async function POST(req: NextRequest) {
     if (sanitized.length === 0) {
       return NextResponse.json({
         success: true,
-        reply: 'Hello! How can I help you today with AQS Restaurant?',
+        reply: 'Hello! How can I help you today with APNA-DERA Restaurant?',
         intent: 'GREETING',
       })
     }
 
-    // Check if this is an admin sync request
+    // Check if this is an explicit admin sync request
     if (body.action === 'sync' && body.menuItems) {
       const syncResult = syncKnowledgeBaseFromAdmin(body.menuItems)
       return NextResponse.json({
@@ -39,6 +61,9 @@ export async function POST(req: NextRequest) {
         syncResult,
       })
     }
+
+    // Synchronize latest menu and prices from Supabase
+    await syncMenuFromSupabaseIfNeeded()
 
     // Process via local AI-free NLP rule-based engine
     const response = processChatQuery(sanitized)
@@ -59,7 +84,7 @@ export async function POST(req: NextRequest) {
         success: false,
         error: 'An internal error occurred while processing your request.',
         reply:
-          "Sorry! I don't have this information about AQS Restaurant right now. Please contact our restaurant for assistance.",
+          "Sorry! I don't have this information about APNA-DERA Restaurant right now. Please contact our restaurant for assistance at +92 300 1234567 or contact@apnadera.com.",
       },
       { status: 500 }
     )
@@ -68,6 +93,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
+    await syncMenuFromSupabaseIfNeeded()
     const kb = getKnowledgeBase()
     return NextResponse.json({
       status: 'online',

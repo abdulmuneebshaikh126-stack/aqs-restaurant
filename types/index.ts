@@ -11,6 +11,7 @@ export interface Category {
 export interface MenuItem {
   id: string
   category_id: string | null
+  category_name?: string | null
   name: string
   description: string | null
   price: number
@@ -27,19 +28,24 @@ export interface CartItem extends MenuItem {
   quantity: number
 }
 
-export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered'
+export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
 
 export interface OrderItem {
   id?: string
+  order_id?: string
+  menu_item_id?: string | null
   item_name: string
   item_price: number
   quantity: number
+  created_at?: string
 }
 
 export interface Order {
   id: string
+  order_number?: string
   user_id: string | null
   customer_name: string
+  email?: string | null
   phone: string
   delivery_address: string
   notes: string | null
@@ -53,21 +59,26 @@ export interface Order {
   order_items: OrderItem[]
 }
 
+export type ReservationStatus = 'pending' | 'approved' | 'rejected' | 'seated'
+
 export interface Reservation {
   id: string
   user_id: string | null
   customer_name: string
+  email?: string | null
   phone: string
   reservation_date: string
   reservation_time: string
   guests: number
   special_requests: string | null
-  status: 'pending' | 'approved' | 'rejected'
+  status: ReservationStatus
   created_at: string
   table_id?: string
   table_name?: string
+  table_number?: number
   chairs_count?: number
   selected_chairs?: number[]
+  zone?: string
 }
 
 export interface RestaurantTable {
@@ -80,5 +91,15 @@ export interface RestaurantTable {
   status: 'available' | 'reserved' | 'occupied'
   priceTier?: 'standard' | 'premium' | 'vip'
   features?: string[]
+}
+
+export interface UserProfile {
+  id: string
+  full_name: string | null
+  phone: string | null
+  email?: string | null
+  role: 'customer' | 'admin'
+  created_at?: string
+  updated_at?: string
 }
 

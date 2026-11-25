@@ -97,8 +97,8 @@ export default function ChairVisualizer({
           isTableSelected
             ? 'bg-gradient-to-br from-[#282214] via-[#1a1710] to-[#12110c] shadow-primary/20 border-2'
             : isTableOccupied
-            ? 'bg-[#181313] border border-red-500/20 opacity-60 cursor-not-allowed'
-            : 'bg-[#141418] border hover:border-primary/50'
+            ? 'bg-[var(--surface)] border border-red-500/20 opacity-60 cursor-not-allowed'
+            : 'bg-[var(--surface)] border hover:border-primary/50'
         }`}
       >
         {/* Table Center Badge */}
@@ -106,7 +106,7 @@ export default function ChairVisualizer({
           <div className="flex items-center justify-center gap-1">
             <span
               className={`font-serif text-sm font-bold tracking-wider ${
-                isTableSelected ? 'gold-gradient-text' : isTableOccupied ? 'text-red-400' : 'text-white'
+                isTableSelected ? 'gold-gradient-text' : isTableOccupied ? 'text-red-400' : 'text-[var(--foreground)]'
               }`}
             >
               T-{tableNumber < 10 ? `0${tableNumber}` : tableNumber}
@@ -151,7 +151,7 @@ export default function ChairVisualizer({
                   ? 'gold-gradient-bg border-yellow-200 text-black shadow-primary/40 font-bold'
                   : isTableSelected
                   ? 'bg-[#2a2416] border-primary/40 text-primary hover:border-primary'
-                  : 'bg-[#1a1a20] border-white/10 text-gray-400 hover:border-primary/50 hover:text-white'
+                  : 'bg-[var(--card)] border-[var(--border)] text-[var(--muted-foreground)] hover:border-primary/50 hover:text-[var(--foreground)]'
               }`}
               title={`Chair #${index} (${isTableOccupied ? 'Occupied' : isChairSelected ? 'Selected' : 'Available'})`}
             >

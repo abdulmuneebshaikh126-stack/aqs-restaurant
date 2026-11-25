@@ -47,11 +47,44 @@ CREATE TABLE IF NOT EXISTS public.restaurant_tables (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Profiles Table
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name TEXT,
+  phone TEXT,
+  role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'admin')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, phone, role)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'phone', ''),
+    COALESCE(NEW.raw_user_meta_data->>'role', 'customer')
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    full_name = EXCLUDED.full_name,
+    phone = EXCLUDED.phone;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
 -- Reservations Table
 CREATE TABLE IF NOT EXISTS public.reservations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   customer_name TEXT NOT NULL,
+  email TEXT,
   phone TEXT NOT NULL,
   reservation_date DATE NOT NULL,
   reservation_time TEXT NOT NULL,
@@ -67,15 +100,16 @@ CREATE TABLE IF NOT EXISTS public.reservations (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Table Bookings View
 CREATE OR REPLACE VIEW public.table_bookings AS
   SELECT * FROM public.reservations;
 
 -- Orders Table
 CREATE TABLE IF NOT EXISTS public.orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_number TEXT UNIQUE,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   customer_name TEXT NOT NULL,
+  email TEXT,
   phone TEXT NOT NULL,
   delivery_address TEXT NOT NULL,
   notes TEXT,
@@ -83,7 +117,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   subtotal NUMERIC(10,2) NOT NULL,
   delivery_fee NUMERIC(10,2) DEFAULT 0,
   total NUMERIC(10,2) NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'preparing', 'ready', 'delivered', 'cancelled')),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -98,81 +132,3 @@ CREATE TABLE IF NOT EXISTS public.order_items (
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
--- Profiles Table
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  full_name TEXT,
-  phone TEXT,
-  role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'admin')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_menu_items_category ON public.menu_items(category_id);
-CREATE INDEX IF NOT EXISTS idx_menu_items_available ON public.menu_items(is_available);
-CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
-CREATE INDEX IF NOT EXISTS idx_orders_created ON public.orders(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_id);
-CREATE INDEX IF NOT EXISTS idx_reservations_date ON public.reservations(reservation_date);
-CREATE INDEX IF NOT EXISTS idx_reservations_status ON public.reservations(status);
-
--- Enable RLS
-ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.menu_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.restaurant_tables ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.reservations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-
--- Drop Old Policies
-DROP POLICY IF EXISTS "Public read categories" ON public.categories;
-DROP POLICY IF EXISTS "Manage categories" ON public.categories;
-DROP POLICY IF EXISTS "Public read menu" ON public.menu_items;
-DROP POLICY IF EXISTS "Manage menu" ON public.menu_items;
-DROP POLICY IF EXISTS "Public read tables" ON public.restaurant_tables;
-DROP POLICY IF EXISTS "Manage tables" ON public.restaurant_tables;
-DROP POLICY IF EXISTS "Anyone insert orders" ON public.orders;
-DROP POLICY IF EXISTS "Public read orders" ON public.orders;
-DROP POLICY IF EXISTS "Manage orders" ON public.orders;
-DROP POLICY IF EXISTS "Anyone insert order items" ON public.order_items;
-DROP POLICY IF EXISTS "Public read order items" ON public.order_items;
-DROP POLICY IF EXISTS "Anyone insert reservations" ON public.reservations;
-DROP POLICY IF EXISTS "Public read reservations" ON public.reservations;
-DROP POLICY IF EXISTS "Manage reservations" ON public.reservations;
-DROP POLICY IF EXISTS "Public read profiles" ON public.profiles;
-DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
-
--- Create Policies
-CREATE POLICY "Public read categories" ON public.categories FOR SELECT USING (true);
-CREATE POLICY "Manage categories" ON public.categories FOR ALL USING (true);
-CREATE POLICY "Public read menu" ON public.menu_items FOR SELECT USING (true);
-CREATE POLICY "Manage menu" ON public.menu_items FOR ALL USING (true);
-CREATE POLICY "Public read tables" ON public.restaurant_tables FOR SELECT USING (true);
-CREATE POLICY "Manage tables" ON public.restaurant_tables FOR ALL USING (true);
-CREATE POLICY "Anyone insert orders" ON public.orders FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public read orders" ON public.orders FOR SELECT USING (true);
-CREATE POLICY "Manage orders" ON public.orders FOR ALL USING (true);
-CREATE POLICY "Anyone insert order items" ON public.order_items FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public read order items" ON public.order_items FOR SELECT USING (true);
-CREATE POLICY "Anyone insert reservations" ON public.reservations FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public read reservations" ON public.reservations FOR SELECT USING (true);
-CREATE POLICY "Manage reservations" ON public.reservations FOR ALL USING (true);
-CREATE POLICY "Public read profiles" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-
--- Realtime
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'orders') THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'reservations') THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.reservations;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'menu_items') THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.menu_items;
-  END IF;
-END $$;

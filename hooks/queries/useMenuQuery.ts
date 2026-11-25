@@ -1,8 +1,14 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getMenuItems, getCategories } from '@/lib/supabase/database'
-import { createClient } from '@/lib/supabase/client'
+import {
+  getMenuItems,
+  getCategories,
+  createDish,
+  updateDish,
+  deleteDish,
+  toggleDishAvailability,
+} from '@/lib/supabase/database'
 import { MenuItem } from '@/types'
 
 export const MENU_QUERY_KEY = ['menu_items']
@@ -18,7 +24,7 @@ export function useMenuItemsQuery(fallbackItems?: (MenuItem & { categoryName: st
       }
       return fallbackItems || []
     },
-    staleTime: 1000 * 60 * 5, // 5 mins
+    staleTime: 1000 * 60 * 3, // 3 mins
   })
 }
 
@@ -38,7 +44,6 @@ export function useCategoriesQuery(fallbackCategories?: string[]) {
 
 export function useCreateDishMutation() {
   const queryClient = useQueryClient()
-  const supabase = createClient()
 
   return useMutation({
     mutationFn: async (dish: {
@@ -51,23 +56,36 @@ export function useCreateDishMutation() {
       is_available?: boolean
       is_featured?: boolean
     }) => {
-      const { data, error } = await supabase
-        .from('menu_items')
-        .insert({
-          name: dish.name,
-          category_name: dish.category_name,
-          price: dish.price,
-          discount_price: dish.discount_price || null,
-          description: dish.description || '',
-          image_url: dish.image_url || '',
-          is_available: dish.is_available ?? true,
-          is_featured: dish.is_featured ?? false,
-        })
-        .select()
-        .single()
+      return await createDish(dish)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MENU_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY })
+    },
+  })
+}
 
-      if (error) throw error
-      return data
+export function useUpdateDishMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      dishId,
+      dish,
+    }: {
+      dishId: string
+      dish: {
+        name: string
+        category_name: string
+        price: number
+        discount_price?: number | null
+        description?: string
+        image_url?: string
+        is_available?: boolean
+        is_featured?: boolean
+      }
+    }) => {
+      return await updateDish(dishId, dish)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MENU_QUERY_KEY })
@@ -77,17 +95,23 @@ export function useCreateDishMutation() {
 
 export function useDeleteDishMutation() {
   const queryClient = useQueryClient()
-  const supabase = createClient()
 
   return useMutation({
     mutationFn: async (dishId: string) => {
-      const { error } = await supabase
-        .from('menu_items')
-        .delete()
-        .eq('id', dishId)
+      return await deleteDish(dishId)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MENU_QUERY_KEY })
+    },
+  })
+}
 
-      if (error) throw error
-      return dishId
+export function useToggleDishAvailabilityMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ dishId, is_available }: { dishId: string; is_available: boolean }) => {
+      return await toggleDishAvailability(dishId, is_available)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MENU_QUERY_KEY })

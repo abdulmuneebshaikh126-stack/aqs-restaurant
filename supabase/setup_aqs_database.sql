@@ -49,11 +49,54 @@ CREATE TABLE IF NOT EXISTS public.restaurant_tables (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. Create Reservations / Table Bookings Table
+-- 5. Create Profiles Table (for registered customers and admins)
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name TEXT,
+  phone TEXT,
+  role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'admin')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Helper function to check admin status securely
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Auto-create profile on Supabase auth signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, phone, role)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'phone', ''),
+    COALESCE(NEW.raw_user_meta_data->>'role', 'customer')
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    full_name = EXCLUDED.full_name,
+    phone = EXCLUDED.phone;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 6. Create Reservations / Table Bookings Table
 CREATE TABLE IF NOT EXISTS public.reservations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   customer_name TEXT NOT NULL,
+  email TEXT,
   phone TEXT NOT NULL,
   reservation_date DATE NOT NULL,
   reservation_time TEXT NOT NULL,
@@ -73,11 +116,13 @@ CREATE TABLE IF NOT EXISTS public.reservations (
 CREATE OR REPLACE VIEW public.table_bookings AS
   SELECT * FROM public.reservations;
 
--- 6. Create Orders Table
+-- 7. Create Orders Table
 CREATE TABLE IF NOT EXISTS public.orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_number TEXT UNIQUE,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   customer_name TEXT NOT NULL,
+  email TEXT,
   phone TEXT NOT NULL,
   delivery_address TEXT NOT NULL,
   notes TEXT,
@@ -85,12 +130,12 @@ CREATE TABLE IF NOT EXISTS public.orders (
   subtotal NUMERIC(10,2) NOT NULL,
   delivery_fee NUMERIC(10,2) DEFAULT 0,
   total NUMERIC(10,2) NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'preparing', 'ready', 'delivered', 'cancelled')),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 7. Create Order Items Table
+-- 8. Create Order Items Table
 CREATE TABLE IF NOT EXISTS public.order_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID REFERENCES public.orders(id) ON DELETE CASCADE,
@@ -101,40 +146,17 @@ CREATE TABLE IF NOT EXISTS public.order_items (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 8. Create Profiles Table (for registered users)
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  full_name TEXT,
-  phone TEXT,
-  role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'admin')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Auto-create profile on signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, full_name, role)
-  VALUES (NEW.id, NEW.raw_user_meta_data->>'full_name', 'customer')
-  ON CONFLICT (id) DO NOTHING;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
 -- 9. Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_menu_items_category ON public.menu_items(category_id);
 CREATE INDEX IF NOT EXISTS idx_menu_items_available ON public.menu_items(is_available);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON public.orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON public.orders(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_reservations_user_id ON public.reservations(user_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_date ON public.reservations(reservation_date);
 CREATE INDEX IF NOT EXISTS idx_reservations_status ON public.reservations(status);
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
 
 -- 10. Enable Row Level Security (RLS)
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
@@ -157,18 +179,20 @@ DROP POLICY IF EXISTS "Public read orders" ON public.orders;
 DROP POLICY IF EXISTS "Manage orders" ON public.orders;
 DROP POLICY IF EXISTS "Anyone insert order items" ON public.order_items;
 DROP POLICY IF EXISTS "Public read order items" ON public.order_items;
+DROP POLICY IF EXISTS "Manage order items" ON public.order_items;
 DROP POLICY IF EXISTS "Anyone insert reservations" ON public.reservations;
 DROP POLICY IF EXISTS "Public read reservations" ON public.reservations;
 DROP POLICY IF EXISTS "Manage reservations" ON public.reservations;
 DROP POLICY IF EXISTS "Public read profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Manage profiles" ON public.profiles;
 
--- 12. Create Clean RLS Policies
+-- 12. Create Clean & Robust RLS Policies
 -- Categories: Anyone can read, authenticated can manage
 CREATE POLICY "Public read categories" ON public.categories FOR SELECT USING (true);
 CREATE POLICY "Manage categories" ON public.categories FOR ALL USING (true);
 
--- Menu: Anyone can read available menu items
+-- Menu: Anyone can read menu items
 CREATE POLICY "Public read menu" ON public.menu_items FOR SELECT USING (true);
 CREATE POLICY "Manage menu" ON public.menu_items FOR ALL USING (true);
 
@@ -176,23 +200,25 @@ CREATE POLICY "Manage menu" ON public.menu_items FOR ALL USING (true);
 CREATE POLICY "Public read tables" ON public.restaurant_tables FOR SELECT USING (true);
 CREATE POLICY "Manage tables" ON public.restaurant_tables FOR ALL USING (true);
 
--- Orders: Anyone (including guest customers) can place an order and track it
+-- Orders: Anyone can create orders and view them (guest + authenticated tracking)
 CREATE POLICY "Anyone insert orders" ON public.orders FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public read orders" ON public.orders FOR SELECT USING (true);
 CREATE POLICY "Manage orders" ON public.orders FOR ALL USING (true);
 
--- Order Items: Anyone can insert items when ordering, and read them when tracking
+-- Order Items: Anyone can insert with order, and read items for tracking
 CREATE POLICY "Anyone insert order items" ON public.order_items FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public read order items" ON public.order_items FOR SELECT USING (true);
+CREATE POLICY "Manage order items" ON public.order_items FOR ALL USING (true);
 
 -- Reservations: Anyone can book a table, read reservations for status / admin
 CREATE POLICY "Anyone insert reservations" ON public.reservations FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public read reservations" ON public.reservations FOR SELECT USING (true);
 CREATE POLICY "Manage reservations" ON public.reservations FOR ALL USING (true);
 
--- Profiles
+-- Profiles: Public can read profiles, users can update their own, and admin management
 CREATE POLICY "Public read profiles" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Manage profiles" ON public.profiles FOR ALL USING (true);
 
 -- 13. Enable Supabase Realtime for Live Kitchen Orders & Reservations
 DO $$

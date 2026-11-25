@@ -64,15 +64,15 @@ export interface KnowledgeBaseSnapshot {
   lastUpdated: string
 }
 
-// Verified data extracted directly from the existing AQS Restaurant codebase
+// Verified data extracted directly from the existing APNA-DERA Restaurant codebase
 const VERIFIED_RESTAURANT_INFO: RestaurantInfo = {
-  name: 'AQS Restaurant',
+  name: 'APNA-DERA Restaurant',
   tagline: 'Good Food • Good Mood',
   description:
     'Where culinary passion meets sophisticated taste. Crafting memorable dining experiences with the finest ingredients. Indulge in our curated symphony of extraordinary flavors fusing culinary artistry with modern dining excellence.',
   address: '123 Luxury Avenue, Gourmet District',
   phone: '+92 300 1234567',
-  email: 'contact@aqsrestaurant.com',
+  email: 'contact@apnadera.com',
   delivery_fee: 5.0,
   delivery_time: 'Hot and fresh dishes delivered directly to your doorstep in 30 minutes.',
   payment_methods: 'Cash on Delivery (COD)',
@@ -389,15 +389,15 @@ const VERIFIED_FAQS: FAQKB[] = [
   },
   {
     topic: 'Opening Hours',
-    question: 'What are the opening and closing hours of AQS Restaurant?',
+    question: 'What are the opening and closing hours of APNA-DERA Restaurant?',
     answer:
-      'AQS Restaurant is open: Monday – Thursday: 11:00 AM – 11:00 PM | Friday – Saturday: 11:00 AM – 12:00 AM (Midnight) | Sunday: 12:00 PM – 10:00 PM.',
+      'APNA-DERA Restaurant is open: Monday – Thursday: 11:00 AM – 11:00 PM | Friday – Saturday: 11:00 AM – 12:00 AM (Midnight) | Sunday: 12:00 PM – 10:00 PM.',
   },
   {
     topic: 'Location',
-    question: 'Where is AQS Restaurant located?',
+    question: 'Where is APNA-DERA Restaurant located?',
     answer:
-      'AQS Restaurant is located at 123 Luxury Avenue, Gourmet District. You can reach our front desk by phone at +92 300 1234567 or by email at contact@aqsrestaurant.com.',
+      'APNA-DERA Restaurant is located at 123 Luxury Avenue, Gourmet District. You can reach our front desk by phone at +92 300 1234567 or by email at contact@apnadera.com.',
   },
   {
     topic: 'Ordering',
@@ -698,7 +698,7 @@ export function syncKnowledgeBaseFromAdmin(newOrUpdatedItems?: any[]): { success
     const updatedMenuItems: MenuItemKB[] = newOrUpdatedItems.map((item) => ({
       id: item.id || `dish-${Date.now()}`,
       name: item.name,
-      category: item.category || 'Specialties',
+      category: item.category?.name || item.category_name || item.category || 'Specialties',
       description: item.description || '',
       price: parseFloat(item.price) || 0,
       discount_price: item.discount_price ? parseFloat(item.discount_price) : null,

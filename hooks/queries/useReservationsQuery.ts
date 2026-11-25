@@ -1,10 +1,16 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getAdminReservations, updateReservationStatus, submitReservation } from '@/lib/supabase/database'
-import { Reservation } from '@/types'
+import {
+  getAdminReservations,
+  getUserReservations,
+  updateReservationStatus,
+  submitReservation,
+} from '@/lib/supabase/database'
+import { Reservation, ReservationStatus } from '@/types'
 
 export const ADMIN_RESERVATIONS_KEY = ['admin_reservations']
+export const userReservationsKey = (userId: string) => ['user_reservations', userId]
 
 export function useAdminReservationsQuery() {
   return useQuery({
@@ -27,12 +33,38 @@ export function useAdminReservationsQuery() {
   })
 }
 
+export function useUserReservationsQuery(userId?: string | null) {
+  return useQuery({
+    queryKey: userReservationsKey(userId || 'guest'),
+    queryFn: async () => {
+      if (!userId) return []
+      const dbRes = await getUserReservations(userId)
+      if (dbRes && dbRes.length > 0) {
+        return dbRes
+      }
+      try {
+        const stored = localStorage.getItem('aqs_reservations_data')
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed.filter((r: any) => r.user_id === userId)
+          }
+        }
+      } catch (e) {}
+      return []
+    },
+    enabled: Boolean(userId),
+    staleTime: 1000 * 30,
+  })
+}
+
 export function useCreateReservationMutation() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (payload: {
       customer_name: string
+      email?: string
       phone: string
       reservation_date: string
       reservation_time: string
@@ -44,6 +76,7 @@ export function useCreateReservationMutation() {
       selected_chairs?: number[]
       zone?: string
       special_requests?: string | null
+      user_id?: string | null
     }) => {
       const data = await submitReservation(payload)
       return data
@@ -63,7 +96,7 @@ export function useUpdateReservationStatusMutation() {
       status,
     }: {
       resId: string
-      status: 'approved' | 'rejected' | 'seated'
+      status: ReservationStatus
     }) => {
       await updateReservationStatus(resId, status)
       // also update localStorage

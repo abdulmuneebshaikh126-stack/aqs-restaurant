@@ -1,11 +1,10 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageSquare,
-  X,
   Send,
   Trash2,
   Sparkles,
@@ -14,6 +13,7 @@ import {
   ChevronDown,
   Minimize2,
   Maximize2,
+  X,
 } from 'lucide-react'
 
 interface Message {
@@ -27,7 +27,7 @@ interface Message {
 const DEFAULT_WELCOME_MESSAGE: Message = {
   id: 'welcome-1',
   sender: 'bot',
-  text: 'Welcome to AQS Restaurant! How can I help you today? ✨\n\nYou can ask me about our menu, dish prices, table & chair reservations, opening hours, or delivery.',
+  text: 'Welcome to APNA-DERA Restaurant! How can I help you today? ✨\n\nYou can ask me about our menu, dish prices, table & chair reservations, opening hours, or delivery.',
   timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   suggestedQuestions: [
     'What food do you have?',
@@ -109,7 +109,7 @@ export default function ChatbotWidget() {
       const botReply: Message = {
         id: `bot-${Date.now()}`,
         sender: 'bot',
-        text: data.reply || "Sorry! I don't have this information about AQS Restaurant right now. Please contact our restaurant for assistance.",
+        text: data.reply || "Sorry! I don't have this information about APNA-DERA Restaurant right now. Please contact our restaurant for assistance.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         suggestedQuestions: data.suggestedQuestions,
       }
@@ -120,7 +120,7 @@ export default function ChatbotWidget() {
       const errorReply: Message = {
         id: `bot-err-${Date.now()}`,
         sender: 'bot',
-        text: "Sorry! I don't have this information about AQS Restaurant right now. Please contact our restaurant for assistance.",
+        text: "Sorry! I don't have this information about APNA-DERA Restaurant right now. Please contact our restaurant for assistance.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }
       setMessages((prev) => [...prev, errorReply])
@@ -156,7 +156,7 @@ export default function ChatbotWidget() {
           aria-label="Let's Chat with AI"
         >
           {/* Elegant Modern Responsive Label */}
-          <span className="relative flex items-center whitespace-nowrap rounded-full bg-[#141418]/95 border border-primary/40 px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-semibold tracking-wide text-[#F5F5F7] shadow-xl backdrop-blur-md transition-all duration-300 ease-out group-hover:border-primary group-hover:text-primary group-hover:shadow-[0_0_20px_rgba(197,160,89,0.25)] group-hover:-translate-x-0.5">
+          <span className="relative flex items-center whitespace-nowrap rounded-full bg-[var(--secondary)]/95 border border-primary/40 px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-semibold tracking-wide text-[var(--foreground)] shadow-xl backdrop-blur-md transition-all duration-300 ease-out group-hover:border-primary group-hover:text-primary group-hover:shadow-[0_0_20px_rgba(197,160,89,0.25)] group-hover:-translate-x-0.5">
             Let&apos;s Chat with AI
           </span>
 
@@ -186,19 +186,19 @@ export default function ChatbotWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.92 }}
             transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-            className={`flex flex-col overflow-hidden rounded-3xl bg-[#0c0c0e] border border-primary/40 shadow-2xl transition-all duration-300 ${
+            className={`flex flex-col overflow-hidden rounded-3xl bg-[var(--background)] border border-primary/40 shadow-2xl transition-all duration-300 ${
               isMinimized
                 ? 'h-16 w-80 sm:w-96'
                 : 'h-[580px] max-h-[85vh] w-[92vw] sm:w-[410px]'
             }`}
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-primary/20 bg-[#141418] px-4 py-3 shadow-md">
+            <div className="flex items-center justify-between border-b border-primary/20 bg-[var(--secondary)] px-4 py-3 shadow-md">
               <div className="flex items-center gap-3">
                 <div className="relative h-10 w-10 overflow-hidden rounded-full border border-primary/40 shadow">
                   <Image
                     src="/images/logo.jpg"
-                    alt="AQS Restaurant"
+                    alt="APNA-DERA Restaurant"
                     fill
                     sizes="40px"
                     className="object-cover"
@@ -207,18 +207,18 @@ export default function ChatbotWidget() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-serif text-sm font-bold tracking-wider gold-gradient-text">
-                      AQS Assistant
+                      APNA-DERA Assistant
                     </h3>
                     <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                   </div>
-                  <p className="text-[10px] uppercase tracking-wider text-gray-400">
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--foreground)]/65">
                     AI-Free Verified Knowledge Base
                   </p>
                 </div>
               </div>
 
               {/* Header Action Buttons */}
-              <div className="flex items-center gap-1 text-gray-400">
+              <div className="flex items-center gap-1 text-[var(--foreground)]/65">
                 <button
                   onClick={handleClearChat}
                   title="Clear Conversation"
@@ -265,7 +265,7 @@ export default function ChatbotWidget() {
                           <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-primary/30 shadow-sm mb-1">
                             <Image
                               src="/images/logo.jpg"
-                              alt="AQS Bot"
+                              alt="APNA-DERA Bot"
                               fill
                               sizes="28px"
                               className="object-cover"
@@ -277,14 +277,14 @@ export default function ChatbotWidget() {
                           className={`rounded-2xl px-4 py-3 text-xs md:text-sm leading-relaxed shadow-md ${
                             msg.sender === 'user'
                               ? 'gold-gradient-bg text-black font-medium rounded-br-none'
-                              : 'bg-[#16161c] border border-primary/20 text-gray-200 rounded-bl-none'
+                              : 'bg-[var(--background)] border border-primary/20 text-[var(--foreground)] rounded-bl-none'
                           }`}
                         >
                           <div className="whitespace-pre-line">{msg.text}</div>
 
                           <div
                             className={`mt-1.5 text-[9px] text-right font-light ${
-                              msg.sender === 'user' ? 'text-black/60' : 'text-gray-500'
+                              msg.sender === 'user' ? 'text-black/60' : 'text-[var(--foreground)]/50'
                             }`}
                           >
                             {msg.timestamp}
@@ -292,7 +292,7 @@ export default function ChatbotWidget() {
                         </div>
 
                         {msg.sender === 'user' && (
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1c1c24] border border-white/10 text-primary mb-1">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--background)] border border-[var(--foreground)]/10 text-primary mb-1">
                             <User className="h-4 w-4" />
                           </div>
                         )}
@@ -305,7 +305,7 @@ export default function ChatbotWidget() {
                             <button
                               key={q}
                               onClick={() => handleSend(q)}
-                              className="rounded-full bg-[#181820] border border-primary/30 px-3 py-1 text-[11px] font-medium text-[#E5C158] hover:bg-primary hover:text-black transition duration-200 shadow-sm"
+                              className="rounded-full bg-[var(--background)] border border-primary/30 px-3 py-1 text-[11px] font-medium text-[#E5C158] hover:bg-primary hover:text-black transition duration-200 shadow-sm"
                             >
                               {q}
                             </button>
@@ -327,7 +327,7 @@ export default function ChatbotWidget() {
                           className="object-cover"
                         />
                       </div>
-                      <div className="rounded-2xl rounded-bl-none bg-[#16161c] border border-primary/20 px-4 py-3 flex items-center gap-1.5 shadow">
+                      <div className="rounded-2xl rounded-bl-none bg-[var(--background)] border border-primary/20 px-4 py-3 flex items-center gap-1.5 shadow">
                         <span className="h-2 w-2 rounded-full gold-gradient-bg animate-bounce" />
                         <span className="h-2 w-2 rounded-full gold-gradient-bg animate-bounce [animation-delay:0.2s]" />
                         <span className="h-2 w-2 rounded-full gold-gradient-bg animate-bounce [animation-delay:0.4s]" />
@@ -339,29 +339,29 @@ export default function ChatbotWidget() {
                 </div>
 
                 {/* Quick Navigation Action Pills */}
-                <div className="border-t border-white/5 bg-[#101014] px-3 py-2 flex items-center gap-2 overflow-x-auto scrollbar-none">
+                <div className="border-t border-white/5 bg-[var(--secondary)] px-3 py-2 flex items-center gap-2 overflow-x-auto scrollbar-none">
                   <Link
                     href="/menu"
-                    className="flex shrink-0 items-center gap-1 rounded-full bg-[#181820] border border-white/10 px-2.5 py-1 text-[10px] text-gray-300 hover:text-primary transition"
+                    className="flex shrink-0 items-center gap-1 rounded-full bg-[var(--background)] border border-[var(--foreground)]/10 px-2.5 py-1 text-[10px] text-[var(--foreground)]/80 hover:text-primary transition"
                   >
                     <span>Menu</span> <ExternalLink className="h-2.5 w-2.5" />
                   </Link>
                   <Link
                     href="/reservations"
-                    className="flex shrink-0 items-center gap-1 rounded-full bg-[#181820] border border-white/10 px-2.5 py-1 text-[10px] text-gray-300 hover:text-primary transition"
+                    className="flex shrink-0 items-center gap-1 rounded-full bg-[var(--background)] border border-[var(--foreground)]/10 px-2.5 py-1 text-[10px] text-[var(--foreground)]/80 hover:text-primary transition"
                   >
                     <span>Reserve Chairs</span> <ExternalLink className="h-2.5 w-2.5" />
                   </Link>
                   <Link
                     href="/orders"
-                    className="flex shrink-0 items-center gap-1 rounded-full bg-[#181820] border border-white/10 px-2.5 py-1 text-[10px] text-gray-300 hover:text-primary transition"
+                    className="flex shrink-0 items-center gap-1 rounded-full bg-[var(--background)] border border-[var(--foreground)]/10 px-2.5 py-1 text-[10px] text-[var(--foreground)]/80 hover:text-primary transition"
                   >
                     <span>Track Order</span> <ExternalLink className="h-2.5 w-2.5" />
                   </Link>
                 </div>
 
                 {/* Chat Input Bar */}
-                <div className="border-t border-primary/20 bg-[#141418] p-3">
+                <div className="border-t border-primary/20 bg-[var(--secondary)] p-3">
                   <form
                     onSubmit={(e) => {
                       e.preventDefault()
@@ -376,7 +376,7 @@ export default function ChatbotWidget() {
                       onChange={(e) => setInput(e.target.value)}
                       placeholder="Ask about food, prices, tables, timings..."
                       maxLength={500}
-                      className="flex-1 rounded-full bg-[#0c0c0e] border border-white/10 px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:border-primary focus:outline-none transition"
+                      className="flex-1 rounded-full bg-[var(--background)] border border-[var(--foreground)]/10 px-4 py-2.5 text-xs text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-primary focus:outline-none transition"
                     />
 
                     <button
@@ -397,3 +397,15 @@ export default function ChatbotWidget() {
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
